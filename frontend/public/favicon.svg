@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" fill="none">
+  <!-- Red Dot for "i" -->
+  <circle cx="50" cy="34" r="20" fill="#E20913" />
+
+  <!-- Vertical Navy Stem for "i" -->
+  <rect x="32" y="68" width="36" height="136" rx="4" fill="#042562" />
+
+  <!-- Corporate Blue Curved Loop for "R" -->
+  <path
+    d="M68 68H126C156 68 172 84 172 106C172 128 156 144 126 144H68V68ZM68 98V114H118C132 114 142 111 142 106C142 101 132 98 118 98H68Z"
+    fill-rule="evenodd"
+    clip-rule="evenodd"
+    fill="#1865C0"
+  />
+
+  <!-- Navy Diagonal Leg for "R" -->
+  <path
+    d="M94 124L164 204H122L68 138V124H94Z"
+    fill="#042562"
+  />
+</svg>

@@ -1,0 +1,10 @@
+# ==============================================================================
+#  iRACK IT Solution — System Task Crontab
+# ==============================================================================
+# Triggers Laravel scheduler every minute to prune expired tokens,
+# expire overdue quotations, and snapshot daily inventory metrics.
+
+* * * * * cd /var/www/irack/backend && php artisan schedule:run >> /dev/null 2>&1
+
+# Nightly automated MySQL & Config backup at 02:30 AM
+30 2 * * * /var/www/irack/backend/scripts/backup.sh >> /var/log/irack_backup.log 2>&1
