@@ -3,8 +3,5 @@
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return response()->json([
-        'message' => 'iRACK IT Solution RESTful API Service',
-        'health' => '/api/v1/health',
-    ]);
+    return redirect()->away(rtrim((string) config('app.frontend_url'), '/'));
 });
