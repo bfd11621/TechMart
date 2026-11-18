@@ -178,6 +178,7 @@ Route::prefix('v1')->group(function () {
             Route::put('/{quotation}', [QuotationController::class, 'update'])->middleware('check.permission:quotations.update');
             Route::patch('/{quotation}/status', [QuotationController::class, 'updateStatus'])->middleware('check.permission:quotations.approve');
             Route::get('/{quotation}/pdf', [QuotationController::class, 'downloadPdf'])->middleware('check.permission:quotations.pdf');
+            Route::post('/{quotation}/send', [QuotationController::class, 'send'])->middleware('check.permission:quotations.update');
             Route::post('/{quotation}/convert', [SalesOrderController::class, 'convert'])->middleware('check.permission:sales.confirm');
             Route::delete('/{quotation}', [QuotationController::class, 'destroy'])->middleware('check.permission:quotations.update');
         });

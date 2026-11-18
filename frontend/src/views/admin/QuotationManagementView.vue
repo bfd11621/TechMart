@@ -454,13 +454,23 @@
 
           <!-- Drawer Footer Actions -->
           <div class="p-4 bg-[#F4F6FA] border-t border-slate-200 flex items-center justify-between">
-            <button
-              @click="downloadPdf(selectedQuotation)"
-              class="inline-flex items-center gap-1.5 bg-white border border-slate-300 text-slate-700 hover:text-[#042562] hover:bg-slate-50 px-4 py-2 rounded-lg text-xs font-bold transition-colors"
-            >
-              <Download class="w-4 h-4 text-[#1865C0]" />
-              <span>Download Branded PDF</span>
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                @click="downloadPdf(selectedQuotation)"
+                class="inline-flex items-center gap-1.5 bg-white border border-slate-300 text-slate-700 hover:text-[#042562] hover:bg-slate-50 px-4 py-2 rounded-lg text-xs font-bold transition-colors"
+              >
+                <Download class="w-4 h-4 text-[#1865C0]" />
+                <span>Download Branded PDF</span>
+              </button>
+              <button
+                v-if="selectedQuotation.status !== 'CONVERTED'"
+                @click="openSendModal(selectedQuotation)"
+                class="inline-flex items-center gap-1.5 bg-[#042562] hover:bg-[#1865C0] text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors"
+              >
+                <Mail class="w-4 h-4" />
+                <span>Send to Client</span>
+              </button>
+            </div>
 
             <button
               v-if="selectedQuotation.can_be_converted || selectedQuotation.status === 'APPROVED'"
@@ -811,6 +821,62 @@
         </div>
       </div>
 
+      <!-- Modal: Send quotation PDF -->
+      <div
+        v-if="sendModalOpen && sendQuotation"
+        class="fixed inset-0 z-50 overflow-y-auto bg-navy-950/60 backdrop-blur-sm flex items-center justify-center p-4"
+      >
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+          <div class="bg-[#042562] text-white p-4 flex items-center justify-between">
+            <h3 class="font-bold text-sm">Send to Client</h3>
+            <button @click="sendModalOpen = false" class="text-blue-200 hover:text-white">
+              <X class="w-4 h-4" />
+            </button>
+          </div>
+
+          <form @submit.prevent="handleSendToClient" class="p-5 space-y-4 text-xs">
+            <p class="text-slate-500">
+              Email the branded PDF for <strong class="text-[#042562]">{{ sendQuotation.quotation_number }}</strong>.
+              An open quotation is marked Sent to Customer after the message is sent.
+            </p>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Customer email *</label>
+              <input
+                v-model="sendForm.email"
+                type="email"
+                required
+                class="w-full bg-[#F4F6FA] text-xs rounded-lg px-3 py-2 border border-slate-300"
+              />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Message</label>
+              <textarea
+                v-model="sendForm.message"
+                rows="4"
+                class="w-full bg-[#F4F6FA] text-xs rounded-lg p-2.5 border border-slate-300"
+                placeholder="Short note to include above the attached quotation..."
+              ></textarea>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+              <button
+                type="button"
+                @click="sendModalOpen = false"
+                class="px-3 py-1.5 border border-slate-300 text-slate-600 rounded-lg font-bold"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                :disabled="submitting"
+                class="px-4 py-1.5 bg-[#042562] hover:bg-[#1865C0] text-white rounded-lg font-bold"
+              >
+                {{ submitting ? 'Sending...' : 'Send PDF' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <!-- Modal: Change Status -->
       <div
         v-if="statusModalOpen && statusQuotation"
@@ -892,6 +958,7 @@ import {
   Building,
   Eye,
   Download,
+  Mail,
   SlidersHorizontal,
   ShoppingCart,
   Trash2,
@@ -920,6 +987,9 @@ const convertModalOpen = ref(false);
 const convertingQuotation = ref(null);
 
 const statusModalOpen = ref(false);
+const sendModalOpen = ref(false);
+const sendQuotation = ref(null);
+const sendForm = ref({ email: '', message: '' });
 const statusQuotation = ref(null);
 const targetStatus = ref('');
 const statusNotes = ref('');
@@ -1144,6 +1214,36 @@ async function handleUpdateStatus() {
     await fetchQuotations();
   } catch (err) {
     notify.error(err.message || 'Failed to transition status');
+  } finally {
+    submitting.value = false;
+  }
+}
+
+function openSendModal(quote) {
+  sendQuotation.value = quote;
+  sendForm.value = {
+    email: quote.customer_email || '',
+    message: `Please find quotation ${quote.quotation_number} attached. Reply to this email to approve the offer or request a change.`,
+  };
+  sendModalOpen.value = true;
+}
+
+async function handleSendToClient() {
+  if (!sendQuotation.value) return;
+  submitting.value = true;
+  try {
+    const res = await quotationService.sendToClient(sendQuotation.value.id, {
+      email: sendForm.value.email,
+      message: sendForm.value.message,
+    });
+    notify.success(res.message || 'Quotation emailed to the customer.');
+    sendModalOpen.value = false;
+    if (selectedQuotation.value?.id === sendQuotation.value.id && res.data) {
+      selectedQuotation.value = { ...selectedQuotation.value, ...res.data };
+    }
+    await fetchQuotations();
+  } catch (err) {
+    notify.error(err.response?.data?.message || err.message || 'Failed to email the quotation.');
   } finally {
     submitting.value = false;
   }

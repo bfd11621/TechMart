@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Enums\QuotationStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\SendQuotationRequest;
 use App\Http\Requests\Admin\StoreQuotationRequest;
 use App\Http\Requests\Admin\UpdateQuotationRequest;
 use App\Http\Requests\Admin\UpdateQuotationStatusRequest;
@@ -168,9 +169,9 @@ class QuotationController extends Controller
         try {
             $updated = $this->quotationService->transitionStatus(
                 $quotation,
-                QuotationStatus::from($request->status),
-                $request->user(),
-                $request->notes
+                $request->status,
+                $request->notes,
+                $request->user()
             );
 
             return response()->json([
@@ -199,6 +200,33 @@ class QuotationController extends Controller
         $filename = "iRACK_Quotation_{$quotation->quotation_number}.pdf";
 
         return $pdf->download($filename);
+    }
+
+    /**
+     * Email the quotation PDF to the customer and mark it sent.
+     */
+    public function send(SendQuotationRequest $request, Quotation $quotation): JsonResponse
+    {
+        try {
+            $recipient = $request->input('email') ?: $quotation->customer_email;
+            $updated = $this->quotationService->sendToCustomer(
+                $quotation,
+                $request->user(),
+                $recipient,
+                $request->input('message')
+            );
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Quotation {$updated->quotation_number} emailed to {$recipient}.",
+                'data' => new QuotationResource($updated),
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
     }
 
     /**

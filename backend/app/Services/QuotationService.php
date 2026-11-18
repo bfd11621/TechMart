@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\QuotationStatus;
 use App\Enums\RfqStatus;
+use App\Mail\QuotationSentMail;
 use App\Models\Product;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
@@ -13,7 +14,9 @@ use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Throwable;
 
 class QuotationService
 {
@@ -293,6 +296,57 @@ class QuotationService
         ]);
 
         return $quotation->fresh(['statusHistories.user']);
+    }
+
+    /**
+     * Email the branded quotation PDF and mark an open quote as sent.
+     */
+    public function sendToCustomer(Quotation $quotation, User $user, ?string $email = null, ?string $message = null): Quotation
+    {
+        if ($quotation->status === QuotationStatus::CONVERTED) {
+            throw new Exception('A converted quotation is already a sales order and cannot be emailed as an open proposal.');
+        }
+
+        $recipient = trim((string) ($email ?: $quotation->customer_email));
+        if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            throw new Exception('A valid customer email is required before this quotation can be sent.');
+        }
+
+        $pdf = $this->generatePdf($quotation);
+        $filename = "iRACK_Quotation_{$quotation->quotation_number}.pdf";
+        $note = trim((string) $message);
+        $historyNote = $note !== ''
+            ? "Quotation PDF emailed to {$recipient}. {$note}"
+            : "Quotation PDF emailed to {$recipient}.";
+
+        try {
+            Mail::to($recipient)->send(new QuotationSentMail(
+                $quotation,
+                $note !== '' ? $note : null,
+                $pdf->output(),
+                $filename
+            ));
+        } catch (Throwable $exception) {
+            throw new Exception('The quotation email could not be sent. '.$exception->getMessage());
+        }
+
+        AuditService::log('QUOTATION_EMAILED', $quotation, null, [
+            'quotation_number' => $quotation->quotation_number,
+            'recipient' => $recipient,
+            'message' => $note !== '' ? $note : null,
+        ]);
+
+        $canMarkSent = in_array($quotation->status, [
+            QuotationStatus::DRAFT,
+            QuotationStatus::PREPARED,
+            QuotationStatus::EXPIRED,
+        ], true);
+
+        if (!$canMarkSent) {
+            return $quotation->fresh(['items.product', 'store', 'preparedBy', 'rfqRequest', 'statusHistories.user']);
+        }
+
+        return $this->transitionStatus($quotation, QuotationStatus::SENT->value, $historyNote, $user);
     }
 
     /**

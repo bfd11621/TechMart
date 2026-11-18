@@ -603,6 +603,14 @@ export const quotationService = {
   },
 
   /**
+   * Email the branded PDF and mark the quotation sent.
+   */
+  async sendToClient(id, payload) {
+    const response = await apiClient.post(`/admin/quotations/${id}/send`, payload);
+    return response.data;
+  },
+
+  /**
    * Download branded PDF proposal document
    */
   async downloadPdf(id, quotationNumber) {
