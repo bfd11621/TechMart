@@ -42,8 +42,8 @@ class UserController extends Controller
             $query->where('store_id', $storeId);
         }
 
-        // Status Filter
-        if ($request->has('is_active') && $request->query('is_active') !== '') {
+        // Status Filter. Empty means "all" — ConvertEmptyStringsToNull turns is_active= into null.
+        if ($request->filled('is_active')) {
             $query->where('is_active', filter_var($request->query('is_active'), FILTER_VALIDATE_BOOLEAN));
         }
 

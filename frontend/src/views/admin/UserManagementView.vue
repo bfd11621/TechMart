@@ -479,13 +479,11 @@ const demoUsers = [
 
 const fetchUsers = async () => {
   try {
-    const params = {
-      search: search.value,
-      role_id: selectedRole.value,
-      store_id: selectedStore.value,
-      is_active: selectedStatus.value,
-      page: currentPage.value,
-    };
+    const params = { page: currentPage.value };
+    if (search.value) params.search = search.value;
+    if (selectedRole.value) params.role_id = selectedRole.value;
+    if (selectedStore.value) params.store_id = selectedStore.value;
+    if (selectedStatus.value !== '') params.is_active = selectedStatus.value;
     const res = await userService.getUsers(params);
     if (res.success) {
       users.value = res.data;
@@ -589,6 +587,7 @@ const saveUser = async () => {
       notify.success(res.message || 'New staff member added.');
     }
     userModalOpen.value = false;
+    if (!isEditing.value) currentPage.value = 1;
     fetchUsers();
   } catch (err) {
     if (!err.response) {

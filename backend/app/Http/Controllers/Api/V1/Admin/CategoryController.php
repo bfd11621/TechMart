@@ -44,7 +44,7 @@ class CategoryController extends Controller
             $query->where('parent_id', $request->query('parent_id'));
         }
 
-        if ($request->has('is_active') && $request->query('is_active') !== '') {
+        if ($request->filled('is_active')) {
             $query->where('is_active', filter_var($request->query('is_active'), FILTER_VALIDATE_BOOLEAN));
         }
 
