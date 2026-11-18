@@ -278,6 +278,7 @@
 import { ref, onMounted } from 'vue';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { useAuthStore } from '@/stores/authStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { analyticsService } from '@/services/analyticsService';
 import {
   ShieldCheck,
@@ -299,13 +300,11 @@ import {
 } from 'lucide-vue-next';
 
 const auth = useAuthStore();
+const settings = useSettingsStore();
 const metrics = ref({});
 
 function formatCurrencyShort(val) {
-  if (!val) return 'SAR 0';
-  if (val >= 1000000) return `SAR ${(val / 1000000).toFixed(1)}M`;
-  if (val >= 1000) return `SAR ${(val / 1000).toFixed(1)}k`;
-  return `SAR ${Number(val).toLocaleString()}`;
+  return settings.formatCurrencyShort(val);
 }
 
 const storesOverview = [

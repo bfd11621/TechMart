@@ -216,7 +216,7 @@
           <div class="flex items-center justify-between mb-4">
             <div>
               <h3 class="text-sm font-black text-[#042562]">Sales Revenue Trajectory Over Time</h3>
-              <p class="text-[11px] text-slate-500">Chronological recognized revenue (SAR) & confirmed order frequency</p>
+              <p class="text-[11px] text-slate-500">Chronological recognized revenue ({{ currencyCode }}) & confirmed order frequency</p>
             </div>
             <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-[#1865C0] border border-blue-200">
               Interactive ECharts
@@ -310,7 +310,7 @@
                 <th class="py-3 px-4">Brand</th>
                 <th class="py-3 px-4 text-center">Units Sold</th>
                 <th class="py-3 px-4 text-right">Avg Unit Price</th>
-                <th class="py-3 px-4 text-right">Total Revenue (SAR)</th>
+                <th class="py-3 px-4 text-right">Total Revenue ({{ currencyCode }})</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -380,7 +380,7 @@
                 <th class="py-3 px-4 text-center">On-Hand Stock</th>
                 <th class="py-3 px-4 text-center">Stock Age</th>
                 <th class="py-3 px-4 text-center">Last Confirmed Sale</th>
-                <th class="py-3 px-4 text-right">Tied Capital (SAR)</th>
+                <th class="py-3 px-4 text-right">Tied Capital ({{ currencyCode }})</th>
                 <th class="py-3 px-4 text-center">Risk Level</th>
               </tr>
             </thead>
@@ -564,6 +564,7 @@ import AdminLayout from '@/layouts/AdminLayout.vue';
 import { analyticsService } from '@/services/analyticsService';
 import { reportService } from '@/services/reportService';
 import { useNotificationStore } from '@/stores/notificationStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import {
   TrendingUp,
   BarChart3,
@@ -583,6 +584,8 @@ import {
 } from 'lucide-vue-next';
 
 const notify = useNotificationStore();
+const settings = useSettingsStore();
+const currencyCode = computed(() => settings.currencyCode);
 
 const loading = ref(false);
 const exportMenuOpen = ref(false);
@@ -635,8 +638,7 @@ const activeBestSellers = computed(() => {
 });
 
 function formatCurrency(val) {
-  if (val === null || val === undefined) return 'SAR 0.00';
-  return `SAR ${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return settings.formatCurrency(val);
 }
 
 function riskBadgeClass(level) {
@@ -749,7 +751,7 @@ function renderTrendChart() {
         let res = `<div style="font-weight:bold;margin-bottom:4px;">${params[0].name}</div>`;
         params.forEach(item => {
           if (item.seriesName === 'Revenue') {
-            res += `<div>${item.marker} ${item.seriesName}: <strong>SAR ${item.value.toLocaleString()}</strong></div>`;
+            res += `<div>${item.marker} ${item.seriesName}: <strong>${settings.formatCurrency(item.value)}</strong></div>`;
           } else {
             res += `<div>${item.marker} ${item.seriesName}: <strong>${item.value} Orders</strong></div>`;
           }
@@ -778,7 +780,7 @@ function renderTrendChart() {
     yAxis: [
       {
         type: 'value',
-        name: 'Revenue (SAR)',
+        name: `Revenue (${settings.currencyCode})`,
         axisLabel: {
           formatter: val => `${val / 1000}k`,
           color: '#64748B',
@@ -837,7 +839,7 @@ function renderCategoryChart() {
   const option = {
     tooltip: {
       trigger: 'item',
-      formatter: '{b}: SAR {c} ({d}%)',
+      formatter: (params) => `${params.name}: ${settings.formatCurrency(params.value)} (${params.percent}%)`,
     },
     legend: {
       orient: 'vertical',
@@ -883,7 +885,10 @@ function renderBrandChart() {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      formatter: '{b}: SAR {c}',
+      formatter: (params) => {
+        const row = Array.isArray(params) ? params[0] : params;
+        return `${row.name}: ${settings.formatCurrency(row.value)}`;
+      },
     },
     grid: {
       left: '3%',

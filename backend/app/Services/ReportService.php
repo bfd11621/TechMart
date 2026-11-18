@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\SalesOrder;
 use App\Models\Store;
 use App\Models\StoreInventory;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -16,6 +17,11 @@ use Illuminate\Support\Str;
 
 class ReportService
 {
+    private function currencyCode(): string
+    {
+        return SystemSetting::get('currency_code', 'ETB') ?: 'ETB';
+    }
+
     public function __construct(
         protected AnalyticsService $analyticsService
     ) {}
@@ -71,6 +77,7 @@ class ReportService
             'byBrand' => $analytics['by_brand'],
             'byStore' => $analytics['by_store'],
             'transactions' => $transactions,
+            'currency' => $this->currencyCode(),
         ];
 
         // Save historical report record
@@ -131,8 +138,8 @@ class ReportService
             'Category',
             'Brand',
             'Quantity',
-            'Unit Price (SAR)',
-            'Line Total (SAR)',
+            'Unit Price ('.$this->currencyCode().')',
+            'Line Total ('.$this->currencyCode().')',
             'Order Status',
             'Payment Status',
         ];
@@ -225,6 +232,7 @@ class ReportService
             'lowStockItems' => $lowStockItems,
             'outOfStockItems' => $outOfStockItems,
             'slowMoving' => $slowMoving,
+            'currency' => $this->currencyCode(),
         ];
 
         // Save report history
@@ -283,8 +291,8 @@ class ReportService
             'Reserved Qty',
             'Available Qty',
             'Min Alert Threshold',
-            'Unit Cost (SAR)',
-            'Total Valuation (SAR)',
+            'Unit Cost ('.$this->currencyCode().')',
+            'Total Valuation ('.$this->currencyCode().')',
             'Stock Condition',
             'Last Movement Date',
         ];

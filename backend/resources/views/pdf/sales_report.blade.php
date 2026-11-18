@@ -248,7 +248,7 @@
         <tr>
             <td class="kpi-cell">
                 <div class="kpi-title">Recognized Sales Revenue</div>
-                <div class="kpi-num green">SAR {{ number_format($summary['total_revenue'], 2) }}</div>
+                <div class="kpi-num green">{{ $currency }} {{ number_format($summary['total_revenue'], 2) }}</div>
             </td>
             <td class="kpi-cell">
                 <div class="kpi-title">Confirmed Orders</div>
@@ -256,11 +256,11 @@
             </td>
             <td class="kpi-cell">
                 <div class="kpi-title">Payments Collected</div>
-                <div class="kpi-num blue">SAR {{ number_format($summary['total_collected'], 2) }}</div>
+                <div class="kpi-num blue">{{ $currency }} {{ number_format($summary['total_collected'], 2) }}</div>
             </td>
             <td class="kpi-cell">
                 <div class="kpi-title">Outstanding Receivables</div>
-                <div class="kpi-num red">SAR {{ number_format($summary['outstanding_receivables'], 2) }}</div>
+                <div class="kpi-num red">{{ $currency }} {{ number_format($summary['outstanding_receivables'], 2) }}</div>
             </td>
         </tr>
     </table>
@@ -272,7 +272,7 @@
             <tr>
                 <th style="width: 40%;">Category</th>
                 <th style="width: 20%;" class="text-center">Units Sold</th>
-                <th style="width: 25%;" class="text-right">Revenue (SAR)</th>
+                <th style="width: 25%;" class="text-right">Revenue ({{ $currency }})</th>
                 <th style="width: 15%;" class="text-right">Revenue Share</th>
             </tr>
         </thead>
@@ -299,7 +299,7 @@
             <tr>
                 <th style="width: 40%;">Manufacturer Brand</th>
                 <th style="width: 20%;" class="text-center">Units Sold</th>
-                <th style="width: 25%;" class="text-right">Revenue (SAR)</th>
+                <th style="width: 25%;" class="text-right">Revenue ({{ $currency }})</th>
                 <th style="width: 15%;" class="text-right">Revenue Share</th>
             </tr>
         </thead>
@@ -328,7 +328,7 @@
                 <th style="width: 16%;">Confirmed Date</th>
                 <th style="width: 26%;">Client / Organization</th>
                 <th style="width: 16%;">Store Branch</th>
-                <th style="width: 12%;" class="text-right">Total (SAR)</th>
+                <th style="width: 12%;" class="text-right">Total ({{ $currency }})</th>
                 <th style="width: 12%;" class="text-center">Payment</th>
             </tr>
         </thead>

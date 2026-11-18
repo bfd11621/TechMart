@@ -176,7 +176,7 @@
                 <th class="py-3 px-4">Customer & Organization</th>
                 <th class="py-3 px-4">Fulfillment Hub</th>
                 <th class="py-3 px-4 text-center">BOM Units</th>
-                <th class="py-3 px-4 text-right">Order Total (SAR)</th>
+                <th class="py-3 px-4 text-right">Order Total ({{ currencyCode }})</th>
                 <th class="py-3 px-4 text-right">Paid / Balance Due</th>
                 <th class="py-3 px-4 text-center">Payment</th>
                 <th class="py-3 px-4 text-center">Order Status</th>
@@ -376,7 +376,7 @@
                       <th class="py-2.5 px-3">Product / Model</th>
                       <th class="py-2.5 px-3 text-center">Qty</th>
                       <th class="py-2.5 px-3 text-right">Unit Price</th>
-                      <th class="py-2.5 px-3 text-right">Total (SAR)</th>
+                      <th class="py-2.5 px-3 text-right">Total ({{ currencyCode }})</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100">
@@ -413,7 +413,7 @@
                 <span class="font-semibold">{{ formatCurrency(selectedOrder.tax_amount) }}</span>
               </div>
               <div class="pt-2 border-t border-slate-300 flex justify-between text-sm font-black text-[#042562]">
-                <span>Total Order Value (SAR)</span>
+                <span>Total Order Value ({{ currencyCode }})</span>
                 <span>{{ formatCurrency(selectedOrder.total_amount) }}</span>
               </div>
               <div class="flex justify-between text-emerald-700 font-bold">
@@ -526,7 +526,7 @@
 
             <!-- Amount Input -->
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Payment Amount (SAR) *</label>
+              <label class="block font-bold text-slate-700 mb-1">Payment Amount ({{ currencyCode }}) *</label>
               <input
                 v-model.number="paymentForm.amount"
                 type="number"
@@ -675,7 +675,7 @@
                   :key="product.id"
                   :value="product.id"
                 >
-                  {{ product.name }} (SAR {{ Number(product.price).toLocaleString() }})
+                  {{ product.name }} ({{ currencyCode }} {{ Number(product.price).toLocaleString() }})
                 </option>
               </select>
             </div>
@@ -735,9 +735,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { salesOrderService } from '@/services/salesOrderService';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { adminProductService } from '@/services/adminProductService';
 import { storeService } from '@/services/storeService';
 import { useNotificationStore } from '@/stores/notificationStore';
@@ -758,6 +759,8 @@ import {
 } from 'lucide-vue-next';
 
 const notify = useNotificationStore();
+const settings = useSettingsStore();
+const currencyCode = computed(() => settings.currencyCode);
 
 const loading = ref(false);
 const submitting = ref(false);
@@ -809,8 +812,7 @@ const orderStatusTabs = [
 ];
 
 function formatCurrency(val) {
-  if (val === null || val === undefined) return 'SAR 0.00';
-  return `SAR ${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return settings.formatCurrency(val);
 }
 
 function paymentBadgeClass(status) {

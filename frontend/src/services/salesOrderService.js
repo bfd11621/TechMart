@@ -1,4 +1,5 @@
 import apiClient from './api';
+import { useSettingsStore } from '@/stores/settingsStore';
 
 // Realistic B2B Fallback Mock Data for Sales Orders and Payments
 const MOCK_ORDERS = [
@@ -510,7 +511,7 @@ export const salesOrderService = {
 
       return {
         status: 'success',
-        message: `Payment of ${amount.toFixed(2)} SAR recorded (Receipt #${receiptNumber}).`,
+        message: `Payment of ${amount.toFixed(2)} ${useSettingsStore().currencyCode} recorded (Receipt #${receiptNumber}).`,
         data: payment,
         order,
       };

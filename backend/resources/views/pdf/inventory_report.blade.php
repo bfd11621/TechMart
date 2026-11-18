@@ -201,7 +201,7 @@
             </td>
             <td class="kpi-cell">
                 <div class="kpi-title">Total Stock Valuation</div>
-                <div class="kpi-num green">SAR {{ number_format($totalValuation, 2) }}</div>
+                <div class="kpi-num green">{{ $currency }} {{ number_format($totalValuation, 2) }}</div>
             </td>
             <td class="kpi-cell">
                 <div class="kpi-title">Low Stock Threshold Warnings</div>
@@ -225,8 +225,8 @@
                 <th style="width: 14%;">Category & Brand</th>
                 <th style="width: 12%;">Branch Store</th>
                 <th style="width: 6%;" class="text-center">On-Hand</th>
-                <th style="width: 8%;" class="text-right">Cost (SAR)</th>
-                <th style="width: 10%;" class="text-right">Valuation (SAR)</th>
+                <th style="width: 8%;" class="text-right">Cost ({{ $currency }})</th>
+                <th style="width: 10%;" class="text-right">Valuation ({{ $currency }})</th>
             </tr>
         </thead>
         <tbody>
@@ -268,7 +268,7 @@
                     <th style="width: 8%;" class="text-center">On-Hand</th>
                     <th style="width: 10%;" class="text-center">Stock Age</th>
                     <th style="width: 12%;" class="text-center">Last Sale</th>
-                    <th style="width: 16%;" class="text-right">Tied Capital (SAR)</th>
+                    <th style="width: 16%;" class="text-right">Tied Capital ({{ $currency }})</th>
                 </tr>
             </thead>
             <tbody>

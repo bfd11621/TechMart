@@ -162,7 +162,7 @@
                 <th class="py-3 px-4">Client / Organization</th>
                 <th class="py-3 px-4">Store Hub</th>
                 <th class="py-3 px-4 text-center">BOM Units</th>
-                <th class="py-3 px-4 text-right">Grand Total (SAR)</th>
+                <th class="py-3 px-4 text-right">Grand Total ({{ currencyCode }})</th>
                 <th class="py-3 px-4">Validity</th>
                 <th class="py-3 px-4 text-center">Status</th>
                 <th class="py-3 px-4 text-right">Actions</th>
@@ -382,7 +382,7 @@
                       <th class="py-2.5 px-3">Product / Model</th>
                       <th class="py-2.5 px-3 text-center">Qty</th>
                       <th class="py-2.5 px-3 text-right">Unit Price</th>
-                      <th class="py-2.5 px-3 text-right">Total (SAR)</th>
+                      <th class="py-2.5 px-3 text-right">Total ({{ currencyCode }})</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100">
@@ -420,7 +420,7 @@
                 <span class="font-semibold">{{ formatCurrency(selectedQuotation.tax_amount) }}</span>
               </div>
               <div class="pt-2 border-t border-slate-300 flex justify-between text-sm font-black text-[#042562]">
-                <span>Grand Total (SAR)</span>
+                <span>Grand Total ({{ currencyCode }})</span>
                 <span>{{ formatCurrency(selectedQuotation.total_amount) }}</span>
               </div>
             </div>
@@ -602,10 +602,10 @@
                       @change="handleProductSelect(item)"
                       class="w-full bg-[#F4F6FA] text-xs rounded-lg px-2.5 py-1.5 border border-slate-300 focus:outline-none"
                     >
-                      <option :value="1">Dell PowerEdge R760 2U Rack Server (Base: SAR 5,200)</option>
-                      <option :value="2">Cisco Catalyst 9300X-48HX Switch (Base: SAR 5,200)</option>
-                      <option :value="3">NetApp AFF A250 NVMe Array (Base: SAR 9,250)</option>
-                      <option :value="4">Schneider APC Smart-UPS Ultra 5kW (Base: SAR 6,000)</option>
+                      <option :value="1">Dell PowerEdge R760 2U Rack Server (Base: {{ currencyCode }} 5,200)</option>
+                      <option :value="2">Cisco Catalyst 9300X-48HX Switch (Base: {{ currencyCode }} 5,200)</option>
+                      <option :value="3">NetApp AFF A250 NVMe Array (Base: {{ currencyCode }} 9,250)</option>
+                      <option :value="4">Schneider APC Smart-UPS Ultra 5kW (Base: {{ currencyCode }} 6,000)</option>
                     </select>
                   </div>
 
@@ -658,7 +658,7 @@
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder="0.00 SAR"
+                  :placeholder="`0.00 ${currencyCode}`"
                   class="w-28 bg-white text-xs rounded-lg px-2 py-1.5 border border-slate-300"
                 />
               </div>
@@ -765,7 +765,7 @@
             <!-- Initial Payment / Advance Option -->
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block font-bold text-slate-700 mb-1">Advance Paid Amount (SAR)</label>
+                <label class="block font-bold text-slate-700 mb-1">Advance Paid Amount ({{ currencyCode }})</label>
                 <input
                   v-model.number="convertForm.initial_payment_amount"
                   type="number"
@@ -943,6 +943,7 @@
 import { ref, computed, onMounted } from 'vue';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { quotationService } from '@/services/quotationService';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { salesOrderService } from '@/services/salesOrderService';
 import { useNotificationStore } from '@/stores/notificationStore';
 import {
@@ -967,6 +968,8 @@ import {
 } from 'lucide-vue-next';
 
 const notify = useNotificationStore();
+const settings = useSettingsStore();
+const currencyCode = computed(() => settings.currencyCode);
 
 const loading = ref(false);
 const submitting = ref(false);
@@ -1037,8 +1040,7 @@ const computedCreateTotal = computed(() => {
 });
 
 function formatCurrency(val) {
-  if (val === null || val === undefined) return 'SAR 0.00';
-  return `SAR ${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return settings.formatCurrency(val);
 }
 
 function badgeVariantClass(variant) {

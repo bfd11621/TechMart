@@ -12,6 +12,7 @@ use App\Http\Resources\PaymentResource;
 use App\Http\Resources\SalesOrderResource;
 use App\Models\Quotation;
 use App\Models\SalesOrder;
+use App\Models\SystemSetting;
 use App\Services\SalesOrderService;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -178,7 +179,7 @@ class SalesOrderController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => "Payment of " . number_format($payment->amount, 2) . " SAR recorded (Receipt #{$payment->receipt_number}).",
+                'message' => 'Payment of ' . number_format($payment->amount, 2) . ' ' . (SystemSetting::get('currency_code', 'ETB') ?: 'ETB') . " recorded (Receipt #{$payment->receipt_number}).",
                 'data' => new PaymentResource($payment),
                 'order' => new SalesOrderResource($order->fresh(['payments.receivedBy', 'items.product', 'store'])),
             ], Response::HTTP_CREATED);

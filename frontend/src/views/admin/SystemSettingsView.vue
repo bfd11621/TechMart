@@ -870,6 +870,7 @@
 import { ref, onMounted } from 'vue';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { configService } from '@/services/configService';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import {
   Image,
@@ -1180,6 +1181,7 @@ async function saveGeneralSettings() {
     const symbolMap = { ETB: 'ETB', SAR: 'SAR', USD: '$', AED: 'AED' };
     formGeneral.value.currency_symbol = symbolMap[formGeneral.value.currency_code] || formGeneral.value.currency_code;
     await configService.updateGroup('system', formGeneral.value);
+    useSettingsStore().applySystem(formGeneral.value);
     notify.success('General system settings updated');
   } catch (err) {
     notify.error('Failed to update general parameters');

@@ -252,10 +252,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { authService } from '@/services/authService';
 import AppLogo from '@/components/common/AppLogo.vue';
 import {
@@ -286,6 +287,11 @@ const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 const notify = useNotificationStore();
+const settings = useSettingsStore();
+
+onMounted(() => {
+  settings.load();
+});
 
 const sidebarCollapsed = ref(false);
 const mobileSidebarOpen = ref(false);
