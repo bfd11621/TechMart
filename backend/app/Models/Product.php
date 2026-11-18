@@ -77,9 +77,13 @@ class Product extends Model
 
     public function availableStock(): int
     {
-        return (int) $this->inventories()->sum(function ($inv) {
-            return max(0, $inv->quantity - $inv->reserved_quantity);
-        });
+        $inventories = $this->relationLoaded('inventories')
+            ? $this->inventories
+            : $this->inventories()->get(['quantity', 'reserved_quantity']);
+
+        return (int) $inventories->sum(
+            fn ($inventory) => max(0, (int) $inventory->quantity - (int) $inventory->reserved_quantity)
+        );
     }
 
     /**

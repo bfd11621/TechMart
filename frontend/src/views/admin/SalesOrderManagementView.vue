@@ -627,15 +627,36 @@
               </div>
 
               <div>
+                <label class="block font-bold text-slate-700 mb-1">Customer Email</label>
+                <input
+                  v-model="directSaleForm.customer_email"
+                  type="email"
+                  placeholder="buyer@company.com"
+                  class="w-full bg-[#F4F6FA] text-xs rounded-lg px-3 py-2 border border-slate-300"
+                />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Customer Phone</label>
+                <input
+                  v-model="directSaleForm.customer_phone"
+                  type="text"
+                  placeholder="+251 911 000 000"
+                  class="w-full bg-[#F4F6FA] text-xs rounded-lg px-3 py-2 border border-slate-300"
+                />
+              </div>
+
+              <div>
                 <label class="block font-bold text-slate-700 mb-1">Fulfillment Store Branch *</label>
                 <select
                   v-model="directSaleForm.store_id"
                   required
                   class="w-full bg-[#F4F6FA] text-xs rounded-lg px-3 py-2 border border-slate-300"
                 >
-                  <option :value="1">Central Distribution Hub (HQ)</option>
-                  <option :value="2">North Logistics Facility</option>
-                  <option :value="3">West Coast Regional Store</option>
+                  <option v-if="!saleStores.length" :value="1">iRACK Central Distribution Hub (HQ)</option>
+                  <option v-for="store in saleStores" :key="store.id" :value="store.id">
+                    {{ store.name }}
+                  </option>
                 </select>
               </div>
             </div>
@@ -648,10 +669,14 @@
                 required
                 class="w-full bg-[#F4F6FA] text-xs rounded-lg px-3 py-2 border border-slate-300"
               >
-                <option :value="1">Dell PowerEdge R760 2U Rack Server (SAR 5,200.00)</option>
-                <option :value="2">Cisco Catalyst 9300X-48HX Switch (SAR 5,200.00)</option>
-                <option :value="3">NetApp AFF A250 NVMe Array (SAR 9,250.00)</option>
-                <option :value="4">Schneider APC Smart-UPS Ultra 5kW (SAR 6,000.00)</option>
+                <option v-if="!saleProducts.length" :value="1">Dell PowerEdge R760 2U Enterprise Server</option>
+                <option
+                  v-for="product in saleProducts"
+                  :key="product.id"
+                  :value="product.id"
+                >
+                  {{ product.name }} (SAR {{ Number(product.price).toLocaleString() }})
+                </option>
               </select>
             </div>
 
@@ -713,6 +738,8 @@
 import { ref, onMounted } from 'vue';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { salesOrderService } from '@/services/salesOrderService';
+import { adminProductService } from '@/services/adminProductService';
+import { storeService } from '@/services/storeService';
 import { useNotificationStore } from '@/stores/notificationStore';
 import {
   BadgeDollarSign,
@@ -761,8 +788,12 @@ const paymentForm = ref({
 });
 
 const directSaleModalOpen = ref(false);
+const saleProducts = ref([]);
+const saleStores = ref([]);
 const directSaleForm = ref({
   customer_name: '',
+  customer_email: '',
+  customer_phone: '',
   store_id: 1,
   selected_product_id: 1,
   quantity: 1,
@@ -897,15 +928,19 @@ function openDirectSaleModal() {
 async function handleCreateDirectSale() {
   submitting.value = true;
   try {
-    const prices = { 1: 5200.00, 2: 5200.00, 3: 9250.00, 4: 6000.00 };
-    const price = prices[directSaleForm.value.selected_product_id] || 1000.00;
+    const selected = saleProducts.value.find(
+      (product) => product.id === Number(directSaleForm.value.selected_product_id)
+    );
+    const price = selected?.price ?? 0;
 
     const payload = {
       store_id: directSaleForm.value.store_id,
       customer_name: directSaleForm.value.customer_name,
+      customer_email: directSaleForm.value.customer_email || undefined,
+      customer_phone: directSaleForm.value.customer_phone || undefined,
       items: [
         {
-          product_id: directSaleForm.value.selected_product_id,
+          product_id: Number(directSaleForm.value.selected_product_id),
           quantity: directSaleForm.value.quantity,
           unit_price: price,
         }
@@ -919,13 +954,47 @@ async function handleCreateDirectSale() {
     directSaleModalOpen.value = false;
     await fetchOrders();
   } catch (err) {
-    notify.error(err.message || 'Failed to create direct sale');
+    notify.error(err.response?.data?.message || err.message || 'Failed to create direct sale');
   } finally {
     submitting.value = false;
   }
 }
 
+async function loadSaleStores() {
+  try {
+    const res = await storeService.getStores();
+    const rows = Array.isArray(res.data) ? res.data : [];
+    saleStores.value = rows.map((store) => ({ id: store.id, name: store.name }));
+    if (saleStores.value.length) {
+      directSaleForm.value.store_id = saleStores.value[0].id;
+    }
+  } catch {
+    saleStores.value = [];
+  }
+}
+
+async function loadSaleProducts() {
+  try {
+    const res = await adminProductService.getProducts({ per_page: 50 });
+    const rows = Array.isArray(res.data) ? res.data : [];
+    saleProducts.value = rows
+      .map((product) => ({
+        id: product.id,
+        name: product.name,
+        price: Number(product.base_price || 0),
+      }))
+      .sort((a, b) => a.id - b.id);
+    if (saleProducts.value.length) {
+      directSaleForm.value.selected_product_id = saleProducts.value[0].id;
+    }
+  } catch {
+    saleProducts.value = [];
+  }
+}
+
 onMounted(() => {
   fetchOrders();
+  loadSaleProducts();
+  loadSaleStores();
 });
 </script>

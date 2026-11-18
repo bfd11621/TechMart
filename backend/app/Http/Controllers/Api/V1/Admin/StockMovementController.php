@@ -73,7 +73,7 @@ class StockMovementController extends Controller
         $movements = $query->latest()->paginate($perPage);
 
         return $this->paginatedResponse(
-            StockMovementResource::collection($movements),
+            $movements->through(fn ($movement) => new StockMovementResource($movement)),
             'Stock movements retrieved successfully.'
         );
     }

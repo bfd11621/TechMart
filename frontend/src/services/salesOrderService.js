@@ -375,6 +375,9 @@ export const salesOrderService = {
       const response = await apiClient.post('/admin/sales-orders', payload);
       return response.data;
     } catch (error) {
+      if (error.response) {
+        throw error;
+      }
       console.warn('API call failed for direct sale, simulating mock creation:', error.message);
       
       const newOrderNum = `SO-2026-D${Math.floor(1000 + Math.random() * 9000)}`;

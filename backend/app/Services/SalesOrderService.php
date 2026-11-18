@@ -8,6 +8,7 @@ use App\Enums\QuotationStatus;
 use App\Enums\RfqStatus;
 use App\Enums\StockMovementType;
 use App\Models\Payment;
+use App\Models\Product;
 use App\Models\Quotation;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderItem;
@@ -251,7 +252,7 @@ class SalesOrderService
                 'quotation_id' => null,
                 'store_id' => $storeId,
                 'customer_name' => $data['customer_name'],
-                'customer_email' => $data['customer_email'],
+                'customer_email' => $data['customer_email'] ?? '',
                 'customer_phone' => $data['customer_phone'] ?? '',
                 'company_name' => $data['company_name'] ?? null,
                 'billing_address' => $data['billing_address'] ?? null,
@@ -336,6 +337,22 @@ class SalesOrderService
                 'order_number' => $orderNumber,
                 'total_amount' => $totalAmount,
             ]);
+
+            $initialPay = round((float) ($data['initial_payment_amount'] ?? 0), 2);
+            if ($initialPay > 0) {
+                if ($initialPay > $totalAmount) {
+                    throw new Exception('Initial payment cannot exceed the order total.');
+                }
+
+                $this->recordPayment($order, [
+                    'amount' => $initialPay,
+                    'payment_method' => $data['payment_method'] ?? 'CASH',
+                    'payment_reference' => $data['payment_reference'] ?? null,
+                    'notes' => 'Initial settlement on direct sale.',
+                ], $user);
+
+                $order->refresh();
+            }
 
             return $order->load(['items.product', 'store', 'createdBy']);
         });

@@ -415,7 +415,21 @@ const fetchProducts = async () => {
     };
     const res = await adminProductService.getProducts(params);
     if (res.success) {
-      products.value = res.data;
+      products.value = res.data.map((product) => {
+        const image = product.primary_image;
+        const imageUrl = typeof image === 'string'
+          ? image
+          : (image?.image_url || null);
+        const stock = product.inventories?.reduce(
+          (sum, row) => sum + Number(row.quantity || 0),
+          0
+        );
+        return {
+          ...product,
+          primary_image: imageUrl,
+          total_stock: stock ?? product.total_stock ?? 0,
+        };
+      });
       totalProducts.value = res.meta?.pagination?.total || res.data.length;
       lastPage.value = res.meta?.pagination?.last_page || 1;
     }
@@ -488,8 +502,12 @@ const togglePublish = async (product) => {
     product.is_published = !product.is_published;
     notify.success(res.message);
   } catch (err) {
-    product.is_published = !product.is_published;
-    notify.success(`Product ${product.is_published ? 'published' : 'unpublished'} (Preview mode).`);
+    if (!err.response) {
+      product.is_published = !product.is_published;
+      notify.success(`Product ${product.is_published ? 'published' : 'unpublished'} (Preview mode).`);
+    } else {
+      notify.error(err.response?.data?.message || 'Could not update publish status.');
+    }
   }
 };
 
@@ -509,8 +527,12 @@ const confirmDelete = async (product) => {
     notify.success(res.message);
     fetchProducts();
   } catch (err) {
-    products.value = products.value.filter(p => p.id !== product.id);
-    notify.success(`Product '${product.name}' removed.`);
+    if (!err.response) {
+      products.value = products.value.filter(p => p.id !== product.id);
+      notify.success(`Product '${product.name}' removed.`);
+    } else {
+      notify.error(err.response?.data?.message || 'Could not delete product.');
+    }
   }
 };
 

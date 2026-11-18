@@ -83,7 +83,7 @@ class SalesOrderController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => SalesOrderResource::collection($orders),
+            'data' => SalesOrderResource::collection($orders->getCollection())->resolve(),
             'meta' => [
                 'current_page' => $orders->currentPage(),
                 'last_page' => $orders->lastPage(),

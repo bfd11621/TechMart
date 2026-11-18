@@ -7,6 +7,8 @@ return [
 
     'name' => env('APP_NAME', 'iRACK IT Solution'),
 
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
+
     'env' => env('APP_ENV', 'production'),
 
     'debug' => (bool) env('APP_DEBUG', false),

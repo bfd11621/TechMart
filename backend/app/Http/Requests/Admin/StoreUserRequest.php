@@ -12,6 +12,13 @@ class StoreUserRequest extends FormRequest
         return $this->user()?->hasPermission('users.create') ?? false;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('store_id') === '' || $this->input('store_id') === 'null') {
+            $this->merge(['store_id' => null]);
+        }
+    }
+
     public function rules(): array
     {
         return [

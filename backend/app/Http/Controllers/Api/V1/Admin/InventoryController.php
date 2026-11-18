@@ -95,7 +95,7 @@ class InventoryController extends Controller
         $inventories = $query->paginate($perPage);
 
         return $this->paginatedResponse(
-            StoreInventoryResource::collection($inventories),
+            $inventories->through(fn ($inventory) => new StoreInventoryResource($inventory)),
             'Store inventory records retrieved successfully.'
         );
     }
