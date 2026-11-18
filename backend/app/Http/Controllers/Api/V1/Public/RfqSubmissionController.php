@@ -78,25 +78,9 @@ class RfqSubmissionController extends Controller
 
             // 6. Asynchronous / Non-blocking Email Notifications
             try {
-                // Fetch designated recipient inboxes from dynamic system settings
-                $recipients = null;
-                try {
-                    $recipients = \App\Models\SystemSetting::get('email.rfq_recipients');
-                } catch (Throwable) {
-                    // Fallback if settings table unmigrated
-                }
-
-                if (empty($recipients) || !is_array($recipients)) {
-                    $recipients = ['dagimw@iracktech.com', config('mail.admin_address', 'admin@irack.com')];
-                }
-
-                // Deliver branded HTML alert to staff administrators
-                foreach ($recipients as $recipient) {
-                    if (!empty($recipient)) {
-                        Mail::to($recipient)->send(new AdminRfqNotificationMail($rfq));
-                        Log::info("Dispatched Admin RFQ notification email for {$rfq->rfq_number} to {$recipient}");
-                    }
-                }
+                $salesInbox = 'dagicreative16@gmail.com';
+                Mail::to($salesInbox)->send(new AdminRfqNotificationMail($rfq));
+                Log::info("Dispatched Admin RFQ notification email for {$rfq->rfq_number} to {$salesInbox}");
 
                 // Deliver customer confirmation copy
                 if (!empty($rfq->customer_email)) {
@@ -112,7 +96,7 @@ class RfqSubmissionController extends Controller
 
             return $this->successResponse(
                 new RfqRequestResource($rfq),
-                "Your Request for Quotation has been received with reference {$rfq->rfq_number}. A dedicated solutions architect will contact you within 24 business hours.",
+                "Your Request for Quotation has been received with reference {$rfq->rfq_number}. A copy was sent to dagicreative16@gmail.com and a confirmation was sent to {$rfq->customer_email}.",
                 201
             );
         } catch (Throwable $e) {

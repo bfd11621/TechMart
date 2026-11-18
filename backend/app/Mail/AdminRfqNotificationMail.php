@@ -5,6 +5,7 @@ namespace App\Mail;
 use App\Models\RfqRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -20,7 +21,11 @@ class AdminRfqNotificationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "[New RFQ Alert] {$this->rfq->rfq_number} — {$this->rfq->customer_name} ({$this->rfq->company_name})",
+            from: new Address('dagicreative16@gmail.com', 'iRACK IT Solution'),
+            replyTo: $this->rfq->customer_email
+                ? [new Address($this->rfq->customer_email, $this->rfq->customer_name ?: 'Customer')]
+                : [],
+            subject: "[Commercial Inquiry] {$this->rfq->rfq_number} — {$this->rfq->customer_name} ({$this->rfq->company_name})",
         );
     }
 

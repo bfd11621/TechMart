@@ -205,7 +205,7 @@ export const rfqService = {
       const response = await apiClient.post('/public/rfqs', formData);
       return response.data;
     } catch (err) {
-      if (err.response?.data?.errors) {
+      if (err.response) {
         throw err;
       }
       // Graceful fallback for offline / demo mode

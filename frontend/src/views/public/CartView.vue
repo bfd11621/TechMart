@@ -52,7 +52,7 @@
             {{ submissionSuccess.rfq_number }}
           </span>
           <span class="text-[11px] text-emerald-700 block">
-            Confirmation email dispatched to: <strong>{{ submissionSuccess.customer_email }}</strong>
+            Sales copy sent to <strong>dagicreative16@gmail.com</strong>. Confirmation sent to <strong>{{ submissionSuccess.customer_email }}</strong>.
           </span>
         </div>
 
