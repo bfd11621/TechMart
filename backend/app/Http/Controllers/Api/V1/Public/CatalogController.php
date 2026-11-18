@@ -67,7 +67,7 @@ class CatalogController extends Controller
     public function products(Request $request): JsonResponse
     {
         $query = Product::where('is_published', true)
-            ->with(['category', 'brand', 'primaryImage', 'inventories']);
+            ->with(['category', 'brand', 'primaryImage', 'images', 'inventories']);
 
         // Search
         if ($search = $request->query('search')) {

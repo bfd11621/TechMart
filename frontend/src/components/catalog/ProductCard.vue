@@ -70,7 +70,7 @@
         class="w-full h-full flex items-center justify-center"
       >
         <img
-          :src="product.primary_image_url || '/images/products/placeholder.png'"
+          :src="imageUrl"
           :alt="product.name"
           class="max-h-40 max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
@@ -160,7 +160,7 @@
         class="w-full h-full flex items-center justify-center"
       >
         <img
-          :src="product.primary_image_url || '/images/products/placeholder.png'"
+          :src="imageUrl"
           :alt="product.name"
           class="max-h-36 max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
@@ -272,6 +272,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { useCartStore } from '@/stores/cartStore';
 import { useCompareStore } from '@/stores/compareStore';
 import { useNotificationStore } from '@/stores/notificationStore';
@@ -299,6 +300,15 @@ defineEmits(['quick-view']);
 const cart = useCartStore();
 const compare = useCompareStore();
 const notify = useNotificationStore();
+
+const imageUrl = computed(() => {
+  const image = props.product.primary_image;
+  if (typeof image === 'string' && image) return image;
+  if (image?.url || image?.image_url) return image.url || image.image_url;
+  const gallery = props.product.images?.[0];
+  if (gallery?.url || gallery?.image_url) return gallery.url || gallery.image_url;
+  return props.product.primary_image_url || '/images/products/placeholder.png';
+});
 
 const addToCart = () => {
   cart.addItem(props.product, 1);
