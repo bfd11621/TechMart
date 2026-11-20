@@ -93,7 +93,7 @@ class ProductController extends Controller
     {
         $data = $request->validated();
         if (empty($data['slug'])) {
-            $data['slug'] = Str::slug($data['name']) . '-' . Str::lower($data['sku']);
+            $data['slug'] = $this->uniqueProductSlug($data['name'], $data['sku']);
         }
 
         // Process datasheet: local file upload OR remote external URL
@@ -293,7 +293,7 @@ class ProductController extends Controller
     {
         $data = $request->validated();
         if (empty($data['slug'])) {
-            $data['slug'] = Str::slug($data['name']) . '-' . Str::lower($data['sku']);
+            $data['slug'] = $this->uniqueProductSlug($data['name'], $data['sku'], $product->id);
         }
 
         $old = $product->toArray();
@@ -699,5 +699,36 @@ class ProductController extends Controller
             'unit_cost' => (float) ($product->cost_price ?? 0),
             'notes' => 'Catalogue stock edit',
         ]);
+    }
+
+    /**
+     * Keep the generated slug inside the varchar(255) column, including the SKU suffix.
+     */
+    private function uniqueProductSlug(string $name, string $sku, ?int $ignoreId = null): string
+    {
+        $suffix = '-' . (Str::slug(Str::lower($sku)) ?: 'item');
+        $base = Str::slug($name) ?: 'product';
+        $room = 255 - strlen($suffix);
+        if ($room < 8) {
+            $suffix = '';
+            $room = 255;
+        }
+
+        $slug = substr($base, 0, $room) . $suffix;
+        $candidate = substr($slug, 0, 255);
+        $i = 2;
+
+        while (
+            Product::query()
+                ->where('slug', $candidate)
+                ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+                ->exists()
+        ) {
+            $tail = '-' . $i;
+            $candidate = substr($slug, 0, 255 - strlen($tail)) . $tail;
+            $i++;
+        }
+
+        return $candidate;
     }
 }
