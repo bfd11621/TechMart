@@ -705,7 +705,7 @@
         v-if="convertModalOpen && convertingQuotation"
         class="fixed inset-0 z-50 overflow-y-auto bg-navy-950/60 backdrop-blur-sm flex items-center justify-center p-4"
       >
-        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-200">
           <!-- Modal Header -->
           <div class="bg-[#16A34A] text-white p-5 flex items-center justify-between">
             <div class="flex items-center gap-2">
@@ -741,8 +741,8 @@
                 <span class="font-semibold text-slate-800">{{ convertingQuotation.customer_name }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-slate-500">Fulfillment Store:</span>
-                <span class="font-semibold text-slate-800">{{ convertingQuotation.store_name }}</span>
+                <span class="text-slate-500">Currency / VAT / Total:</span>
+                <span class="font-semibold text-slate-800">{{ convertingQuotation.currency || currencyCode }} · VAT {{ convertingQuotation.tax_amount }} · {{ formatCurrency(convertingQuotation.total_amount) }}</span>
               </div>
               <div class="flex justify-between text-sm font-black text-[#042562] pt-1.5 border-t border-slate-300">
                 <span>Total Order Value:</span>
@@ -750,9 +750,30 @@
               </div>
             </div>
 
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Fulfillment store *</label>
+                <select v-model="convertForm.store_id" required class="w-full bg-[#F4F6FA] text-xs rounded-lg px-3 py-2 border border-slate-300">
+                  <option v-for="store in stores" :key="store.id" :value="store.id">{{ store.name }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Client PO number</label>
+                <input v-model="convertForm.client_po_number" class="w-full bg-[#F4F6FA] text-xs rounded-lg px-3 py-2 border border-slate-300" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Client PO file</label>
+                <input type="file" accept=".pdf,image/*" class="w-full text-xs" @change="convertForm.client_po_file = $event.target.files?.[0] || null" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Expected delivery</label>
+                <input v-model="convertForm.expected_delivery_date" type="date" class="w-full bg-[#F4F6FA] text-xs rounded-lg px-3 py-2 border border-slate-300" />
+              </div>
+            </div>
+
             <!-- Shipping Destination -->
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Site / Shipping Address *</label>
+              <label class="block font-bold text-slate-700 mb-1">Delivery address *</label>
               <textarea
                 v-model="convertForm.shipping_address"
                 rows="2"
@@ -782,16 +803,32 @@
                   v-model="convertForm.payment_method"
                   class="w-full bg-[#F4F6FA] text-xs rounded-lg px-3 py-2 border border-slate-300"
                 >
-                  <option value="BANK_TRANSFER">Bank Wire Transfer</option>
-                  <option value="CHEQUE">Corporate Cheque</option>
-                  <option value="CREDIT_CARD">Credit Card / POS</option>
-                  <option value="CASH">Counter Cash</option>
+                  <option value="BANK_TRANSFER">Bank Transfer</option>
+                  <option value="CPO">CPO</option>
+                  <option value="CHECK">Check</option>
+                  <option value="CASH">Cash</option>
+                  <option value="NET_30">Corporate Credit / Net 30</option>
+                  <option value="LETTER_OF_CREDIT">Letter of Credit</option>
                 </select>
               </div>
             </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Payment status</label>
+                <select v-model="convertForm.payment_status" class="w-full bg-[#F4F6FA] text-xs rounded-lg px-3 py-2 border border-slate-300">
+                  <option value="UNPAID">Unpaid</option>
+                  <option value="PARTIAL">Partial / Advance Paid</option>
+                  <option value="PAID">Fully Paid</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Order notes</label>
+                <input v-model="convertForm.notes" class="w-full bg-[#F4F6FA] text-xs rounded-lg px-3 py-2 border border-slate-300" />
+              </div>
+            </div>
 
-            <div v-if="convertForm.initial_payment_amount > 0">
-              <label class="block font-bold text-slate-700 mb-1">Payment Reference / Transaction ID</label>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Payment reference / receipt number</label>
               <input
                 v-model="convertForm.payment_reference"
                 type="text"
@@ -907,7 +944,8 @@
             </div>
 
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Audit Notes / Comments</label>
+              <p class="text-[11px] text-slate-500 mb-2">A Sent quotation can be marked Approved or Rejected. Add a reason when you reject it.</p>
+              <label class="block font-bold text-slate-700 mb-1">Notes / reason</label>
               <textarea
                 v-model="statusNotes"
                 rows="3"
@@ -945,6 +983,7 @@ import AdminLayout from '@/layouts/AdminLayout.vue';
 import { quotationService } from '@/services/quotationService';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { salesOrderService } from '@/services/salesOrderService';
+import { storeService } from '@/services/storeService';
 import { useNotificationStore } from '@/stores/notificationStore';
 import {
   FileText,
@@ -1024,11 +1063,18 @@ const newQuoteForm = ref({
   ],
 });
 
+const stores = ref([]);
 const convertForm = ref({
+  store_id: '',
   shipping_address: '',
+  client_po_number: '',
+  client_po_file: null,
+  expected_delivery_date: '',
   initial_payment_amount: 0,
   payment_method: 'BANK_TRANSFER',
+  payment_status: 'UNPAID',
   payment_reference: '',
+  notes: '',
 });
 
 const computedCreateTotal = computed(() => {
@@ -1152,10 +1198,16 @@ async function handleCreateQuotation() {
 function openConvertModal(quote) {
   convertingQuotation.value = quote;
   convertForm.value = {
+    store_id: quote.store_id || stores.value[0]?.id || '',
     shipping_address: quote.billing_address || `Dispatch from ${quote.store_name}`,
+    client_po_number: '',
+    client_po_file: null,
+    expected_delivery_date: '',
     initial_payment_amount: 0,
     payment_method: 'BANK_TRANSFER',
+    payment_status: 'UNPAID',
     payment_reference: '',
+    notes: '',
   };
   convertModalOpen.value = true;
 }
@@ -1164,22 +1216,23 @@ async function handleConfirmConversion() {
   if (!convertingQuotation.value) return;
   submitting.value = true;
   try {
-    const payload = {
-      store_id: convertingQuotation.value.store_id,
-      customer_name: convertingQuotation.value.customer_name,
-      customer_email: convertingQuotation.value.customer_email,
-      company_name: convertingQuotation.value.company_name,
-      billing_address: convertingQuotation.value.billing_address,
+    const fields = {
+      store_id: convertForm.value.store_id,
       shipping_address: convertForm.value.shipping_address,
-      total_amount: convertingQuotation.value.total_amount,
-      subtotal: convertingQuotation.value.subtotal,
-      discount_amount: convertingQuotation.value.discount_amount,
-      tax_amount: convertingQuotation.value.tax_amount,
-      initial_payment_amount: convertForm.value.initial_payment_amount,
+      client_po_number: convertForm.value.client_po_number,
+      expected_delivery_date: convertForm.value.expected_delivery_date,
       payment_method: convertForm.value.payment_method,
+      payment_status: convertForm.value.payment_status,
       payment_reference: convertForm.value.payment_reference,
-      items: convertingQuotation.value.items || [],
+      initial_payment_amount: convertForm.value.initial_payment_amount || 0,
+      notes: convertForm.value.notes,
     };
+    let payload = fields;
+    if (convertForm.value.client_po_file) {
+      payload = new FormData();
+      Object.entries(fields).forEach(([key, value]) => payload.append(key, value ?? ''));
+      payload.append('client_po_file', convertForm.value.client_po_file);
+    }
 
     const res = await salesOrderService.convertQuotation(convertingQuotation.value.id, payload);
     notify.success(res.message || 'Quotation converted into confirmed Sales Order!');
@@ -1187,7 +1240,7 @@ async function handleConfirmConversion() {
     detailDrawerOpen.value = false;
     await fetchQuotations();
   } catch (err) {
-    notify.error(err.message || 'Failed to convert quotation');
+    notify.error(err.response?.data?.message || err.message || 'Failed to convert quotation');
   } finally {
     submitting.value = false;
   }
@@ -1261,7 +1314,13 @@ async function downloadPdf(quote) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   fetchQuotations();
+  try {
+    const response = await storeService.getStores();
+    stores.value = Array.isArray(response.data) ? response.data : [];
+  } catch {
+    stores.value = [];
+  }
 });
 </script>

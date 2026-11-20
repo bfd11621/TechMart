@@ -17,6 +17,8 @@ class SalesOrder extends Model
     protected $fillable = [
         'order_number',
         'quotation_id',
+        'client_po_number',
+        'client_po_file',
         'store_id',
         'customer_name',
         'customer_email',
@@ -24,9 +26,11 @@ class SalesOrder extends Model
         'company_name',
         'billing_address',
         'shipping_address',
+        'expected_delivery_date',
         'status',
         'payment_status',
         'payment_method',
+        'payment_reference',
         'subtotal',
         'discount_amount',
         'tax_amount',
@@ -47,6 +51,7 @@ class SalesOrder extends Model
         'total_amount' => 'decimal:2',
         'paid_amount' => 'decimal:2',
         'confirmed_at' => 'datetime',
+        'expected_delivery_date' => 'date',
     ];
 
     public function quotation(): BelongsTo
@@ -103,6 +108,7 @@ class SalesOrder extends Model
         return $query->whereIn('status', [
             OrderStatus::CONFIRMED->value,
             OrderStatus::PROCESSING->value,
+            OrderStatus::READY_FOR_DISPATCH->value,
             OrderStatus::COMPLETED->value,
         ]);
     }

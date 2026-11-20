@@ -17,6 +17,7 @@ use App\Models\StockMovementItem;
 use App\Models\Store;
 use App\Models\StoreInventory;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -88,9 +89,14 @@ class SalesOrderService
             $orderNumber = self::generateOrderNumber();
 
             // 3. Create Sales Order
+            $paymentStatus = PaymentStatus::tryFrom($data['payment_status'] ?? '') ?? PaymentStatus::UNPAID;
+            $paidAmount = $paymentStatus === PaymentStatus::PAID ? (float) $lockedQuotation->total_amount : 0.00;
+
             $order = SalesOrder::create([
                 'order_number' => $orderNumber,
                 'quotation_id' => $lockedQuotation->id,
+                'client_po_number' => $data['client_po_number'] ?? null,
+                'client_po_file' => $data['client_po_file'] ?? null,
                 'store_id' => $storeId,
                 'customer_name' => $lockedQuotation->customer_name,
                 'customer_email' => $lockedQuotation->customer_email,
@@ -98,14 +104,16 @@ class SalesOrderService
                 'company_name' => $lockedQuotation->company_name,
                 'billing_address' => $lockedQuotation->billing_address,
                 'shipping_address' => $data['shipping_address'] ?? ($lockedQuotation->billing_address ?? "Dispatch from {$store->name}"),
-                'status' => OrderStatus::CONFIRMED, // Confirmed revenue active
-                'payment_status' => PaymentStatus::UNPAID,
-                'payment_method' => $data['payment_method'] ?? 'Bank Wire / Purchase Order',
+                'expected_delivery_date' => $data['expected_delivery_date'] ?? null,
+                'status' => OrderStatus::CONFIRMED,
+                'payment_status' => $paymentStatus,
+                'payment_method' => $data['payment_method'] ?? 'BANK_TRANSFER',
+                'payment_reference' => $data['payment_reference'] ?? null,
                 'subtotal' => $lockedQuotation->subtotal,
                 'discount_amount' => $lockedQuotation->discount_amount,
                 'tax_amount' => $lockedQuotation->tax_amount,
                 'total_amount' => $lockedQuotation->total_amount,
-                'paid_amount' => 0.00,
+                'paid_amount' => $paidAmount,
                 'created_by_user_id' => $user->id,
                 'confirmed_by_user_id' => $user->id,
                 'confirmed_at' => now(),
@@ -204,7 +212,21 @@ class SalesOrderService
                 'store' => $store->name,
             ]);
 
-            return $order->load(['items.product', 'store', 'createdBy', 'confirmedBy']);
+            $initialPay = round((float) ($data['initial_payment_amount'] ?? 0), 2);
+            if ($initialPay > 0 && $paymentStatus !== PaymentStatus::PAID) {
+                if ($initialPay > (float) $order->total_amount) {
+                    throw new Exception('Initial payment cannot exceed the order total.');
+                }
+                $this->recordPayment($order, [
+                    'amount' => $initialPay,
+                    'payment_method' => $data['payment_method'] ?? 'BANK_TRANSFER',
+                    'payment_reference' => $data['payment_reference'] ?? null,
+                    'notes' => 'Advance recorded when the quotation was converted.',
+                ], $user);
+                $order->refresh();
+            }
+
+            return $order->load(['items.product', 'store', 'createdBy', 'confirmedBy', 'quotation']);
         });
     }
 
@@ -471,5 +493,105 @@ class SalesOrderService
             'outstanding_amount' => round($outstandingAmount, 2),
             'recent_orders' => $recentOrders,
         ];
+    }
+
+    public function updateOrder(SalesOrder $order, array $data, User $user): SalesOrder
+    {
+        return DB::transaction(function () use ($order, $data, $user) {
+            $locked = SalesOrder::where('id', $order->id)->lockForUpdate()->firstOrFail();
+            $previous = $locked->status;
+            $next = isset($data['status']) ? OrderStatus::from($data['status']) : $previous;
+
+            if ($previous === OrderStatus::CANCELLED && $next !== OrderStatus::CANCELLED) {
+                throw new Exception('A cancelled sales order cannot be reopened.');
+            }
+
+            if ($previous !== OrderStatus::CANCELLED && $next === OrderStatus::CANCELLED) {
+                $this->restoreStock($locked, $user);
+            }
+
+            $locked->update([
+                'status' => $next,
+                'payment_status' => isset($data['payment_status'])
+                    ? (PaymentStatus::tryFrom($data['payment_status']) ?? $locked->payment_status)
+                    : $locked->payment_status,
+                'payment_reference' => array_key_exists('payment_reference', $data)
+                    ? $data['payment_reference']
+                    : $locked->payment_reference,
+                'notes' => array_key_exists('notes', $data) ? $data['notes'] : $locked->notes,
+            ]);
+
+            return $locked->fresh(['items.product', 'store', 'createdBy', 'confirmedBy', 'quotation', 'payments']);
+        });
+    }
+
+    public function generatePdf(SalesOrder $order)
+    {
+        $order->load(['items.product.brand', 'store', 'quotation', 'createdBy', 'confirmedBy']);
+
+        $pdf = Pdf::loadView('pdf.sales-order', [
+            'order' => $order,
+            'company' => [
+                'name' => 'iRACK TECH-MART',
+                'address' => '3rd Floor, Wastna Commercial Building, General Wingate St, Addis Ababa',
+                'phone' => '+251 94 642 8560',
+                'email' => 'dagicreative16@gmail.com',
+            ],
+        ]);
+        $pdf->setPaper('A4', 'portrait');
+
+        return $pdf;
+    }
+
+    private function restoreStock(SalesOrder $order, User $user): void
+    {
+        $order->loadMissing('items.product', 'store');
+        $movement = StockMovement::create([
+            'movement_number' => InventoryService::generateMovementNumber('RTN'),
+            'type' => StockMovementType::RETURN,
+            'external_reference' => $order->order_number,
+            'status' => 'COMPLETED',
+            'source_store_id' => null,
+            'destination_store_id' => $order->store_id,
+            'reference_type' => 'SalesOrder',
+            'reference_id' => $order->id,
+            'user_id' => $user->id,
+            'reason' => "Stock restored after cancellation of {$order->order_number}",
+            'notes' => 'Cancelled sales order returned the deducted quantities to the fulfillment branch.',
+        ]);
+
+        foreach ($order->items as $item) {
+            $inventory = StoreInventory::where('store_id', $order->store_id)
+                ->where('product_id', $item->product_id)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$inventory) {
+                $inventory = StoreInventory::create([
+                    'store_id' => $order->store_id,
+                    'product_id' => $item->product_id,
+                    'quantity' => 0,
+                    'reserved_quantity' => 0,
+                    'min_alert_quantity' => 5,
+                ]);
+            }
+
+            $previous = (int) $inventory->quantity;
+            $next = $previous + (int) $item->quantity;
+            $inventory->update([
+                'quantity' => $next,
+                'last_movement_at' => now(),
+            ]);
+
+            StockMovementItem::create([
+                'stock_movement_id' => $movement->id,
+                'product_id' => $item->product_id,
+                'quantity' => (int) $item->quantity,
+                'previous_quantity' => $previous,
+                'new_quantity' => $next,
+                'unit_cost' => (float) $item->unit_cost,
+                'notes' => "Restored from cancelled {$order->order_number}",
+            ]);
+        }
     }
 }

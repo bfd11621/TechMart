@@ -7,6 +7,7 @@ enum OrderStatus: string
     case PENDING = 'PENDING';
     case CONFIRMED = 'CONFIRMED';
     case PROCESSING = 'PROCESSING';
+    case READY_FOR_DISPATCH = 'READY_FOR_DISPATCH';
     case COMPLETED = 'COMPLETED';
     case CANCELLED = 'CANCELLED';
 
@@ -14,10 +15,11 @@ enum OrderStatus: string
     {
         return match($this) {
             self::PENDING => 'Pending Review',
-            self::CONFIRMED => 'Confirmed (Revenue Active)',
-            self::PROCESSING => 'Fulfilling & Staging',
-            self::COMPLETED => 'Delivered / Completed',
-            self::CANCELLED => 'Cancelled (Zero Revenue)',
+            self::CONFIRMED => 'Confirmed',
+            self::PROCESSING => 'Processing',
+            self::READY_FOR_DISPATCH => 'Ready for Dispatch',
+            self::COMPLETED => 'Delivered',
+            self::CANCELLED => 'Cancelled',
         };
     }
 
@@ -27,6 +29,7 @@ enum OrderStatus: string
             self::PENDING => 'warning',
             self::CONFIRMED => 'info',
             self::PROCESSING => 'purple',
+            self::READY_FOR_DISPATCH => 'info',
             self::COMPLETED => 'success',
             self::CANCELLED => 'danger',
         };

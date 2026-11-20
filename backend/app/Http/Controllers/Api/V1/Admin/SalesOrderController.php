@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ConvertQuotationRequest;
 use App\Http\Requests\Admin\RecordPaymentRequest;
 use App\Http\Requests\Admin\StoreDirectSaleRequest;
+use App\Http\Requests\Admin\UpdateSalesOrderRequest;
 use App\Http\Resources\PaymentResource;
 use App\Http\Resources\SalesOrderResource;
 use App\Models\Quotation;
@@ -17,6 +18,7 @@ use App\Services\SalesOrderService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 
 class SalesOrderController extends Controller
@@ -53,6 +55,7 @@ class SalesOrderController extends Controller
             $term = '%' . trim($request->search) . '%';
             $query->where(function ($q) use ($term) {
                 $q->where('order_number', 'like', $term)
+                  ->orWhere('client_po_number', 'like', $term)
                   ->orWhere('customer_name', 'like', $term)
                   ->orWhere('customer_email', 'like', $term)
                   ->orWhere('company_name', 'like', $term);
@@ -73,6 +76,7 @@ class SalesOrderController extends Controller
             'pending' => SalesOrder::where('status', OrderStatus::PENDING)->count(),
             'confirmed' => SalesOrder::where('status', OrderStatus::CONFIRMED)->count(),
             'processing' => SalesOrder::where('status', OrderStatus::PROCESSING)->count(),
+            'ready_for_dispatch' => SalesOrder::where('status', OrderStatus::READY_FOR_DISPATCH)->count(),
             'completed' => SalesOrder::where('status', OrderStatus::COMPLETED)->count(),
             'cancelled' => SalesOrder::where('status', OrderStatus::CANCELLED)->count(),
             'unpaid' => SalesOrder::where('payment_status', PaymentStatus::UNPAID)->count(),
@@ -122,9 +126,17 @@ class SalesOrderController extends Controller
     public function convert(ConvertQuotationRequest $request, Quotation $quotation): JsonResponse
     {
         try {
+            $data = $request->validated();
+            unset($data['client_po_file']);
+            if ($request->hasFile('client_po_file')) {
+                $data['client_po_file'] = Storage::url(
+                    $request->file('client_po_file')->store('sales-orders/po', 'public')
+                );
+            }
+
             $order = $this->salesOrderService->convertQuotationToOrder(
                 $quotation,
-                $request->validated(),
+                $data,
                 $request->user()
             );
 
@@ -189,6 +201,36 @@ class SalesOrderController extends Controller
                 'message' => $e->getMessage(),
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
+    }
+
+    public function update(UpdateSalesOrderRequest $request, SalesOrder $order): JsonResponse
+    {
+        try {
+            $updated = $this->salesOrderService->updateOrder(
+                $order,
+                $request->validated(),
+                $request->user()
+            );
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Sales Order {$updated->order_number} updated.",
+                'data' => new SalesOrderResource($updated),
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+    }
+
+    public function downloadPdf(SalesOrder $order)
+    {
+        $pdf = $this->salesOrderService->generatePdf($order);
+        $filename = "iRACK-Sales-Order-{$order->order_number}.pdf";
+
+        return $pdf->download($filename);
     }
 
     /**

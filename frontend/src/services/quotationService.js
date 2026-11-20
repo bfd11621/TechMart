@@ -554,6 +554,7 @@ export const quotationService = {
       const response = await apiClient.patch(`/admin/quotations/${id}/status`, { status, notes });
       return response.data;
     } catch (error) {
+      if (error.response) throw error;
       console.warn(`API call failed for quotation #${id} status transition:`, error.message);
       const quote = MOCK_QUOTATIONS.find(q => q.id === parseInt(id));
       if (!quote) throw new Error('Quotation not found');

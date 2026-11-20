@@ -189,6 +189,8 @@ Route::prefix('v1')->group(function () {
             Route::get('/dashboard', [SalesOrderController::class, 'dashboard'])->middleware('check.permission:sales.view');
             Route::post('/', [SalesOrderController::class, 'store'])->middleware('check.permission:sales.create');
             Route::get('/{order}', [SalesOrderController::class, 'show'])->middleware('check.permission:sales.view');
+            Route::patch('/{order}', [SalesOrderController::class, 'update'])->middleware('check.permission:sales.confirm');
+            Route::get('/{order}/pdf', [SalesOrderController::class, 'downloadPdf'])->middleware('check.permission:sales.view');
             Route::post('/{order}/payments', [SalesOrderController::class, 'recordPayment'])->middleware('check.permission:sales.payments');
         });
 

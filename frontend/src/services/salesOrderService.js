@@ -298,11 +298,28 @@ export const salesOrderService = {
    * Convert an approved quotation into a confirmed sales order.
    * Enforces zero duplicate conversions and stock deduction.
    */
+  async updateOrder(id, payload) {
+    const response = await apiClient.patch(`/admin/sales-orders/${id}`, payload);
+    return response.data;
+  },
+
+  async downloadPdf(id, orderNumber) {
+    const response = await apiClient.get(`/admin/sales-orders/${id}/pdf`, { responseType: 'blob' });
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `iRACK-Sales-Order-${orderNumber || id}.pdf`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  },
+
   async convertQuotation(quotationId, payload = {}) {
     try {
       const response = await apiClient.post(`/admin/quotations/${quotationId}/convert`, payload);
       return response.data;
     } catch (error) {
+      if (error.response) throw error;
       console.warn(`API call failed for converting quotation #${quotationId}:`, error.message);
       
       const newOrderNum = `SO-2026-C${Math.floor(1000 + Math.random() * 9000)}`;

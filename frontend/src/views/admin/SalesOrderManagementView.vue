@@ -199,7 +199,10 @@
                     <span>From Proposal:</span>
                     <span class="font-semibold text-purple-700">{{ order.quotation_number }}</span>
                   </div>
-                  <div v-else class="text-[10px] text-slate-400 mt-0.5">
+                  <div v-if="order.client_po_number" class="text-[10px] text-slate-500 mt-0.5">
+                    PO {{ order.client_po_number }}
+                  </div>
+                  <div v-if="!order.quotation_number && !order.client_po_number" class="text-[10px] text-slate-400 mt-0.5">
                     Direct Point of Sale
                   </div>
                 </td>
@@ -473,12 +476,51 @@
             </div>
           </div>
 
+            <form class="bg-white border border-slate-200 rounded-xl p-4 space-y-3 text-xs" @submit.prevent="saveOrderUpdate">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Fulfillment and payment</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label class="font-bold text-slate-700">Fulfillment status
+                  <select v-model="orderEdit.status" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2">
+                    <option value="CONFIRMED">Confirmed</option>
+                    <option value="PROCESSING">Processing</option>
+                    <option value="READY_FOR_DISPATCH">Ready for Dispatch</option>
+                    <option value="COMPLETED">Delivered</option>
+                    <option value="CANCELLED">Cancelled</option>
+                  </select>
+                </label>
+                <label class="font-bold text-slate-700">Payment status
+                  <select v-model="orderEdit.payment_status" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2">
+                    <option value="UNPAID">Unpaid</option>
+                    <option value="PARTIAL">Partial / Advance Paid</option>
+                    <option value="PAID">Fully Paid</option>
+                  </select>
+                </label>
+              </div>
+              <label class="block font-bold text-slate-700">Payment reference
+                <input v-model="orderEdit.payment_reference" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2" />
+              </label>
+              <label class="block font-bold text-slate-700">Order notes
+                <textarea v-model="orderEdit.notes" rows="2" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2"></textarea>
+              </label>
+              <p v-if="orderEdit.status === 'CANCELLED'" class="text-[11px] text-amber-700">Cancelling returns the deducted quantities to {{ selectedOrder.store_name }}.</p>
+              <button type="submit" class="px-4 py-2 rounded-lg bg-[#042562] text-white font-bold" :disabled="savingOrder">
+                {{ savingOrder ? 'Saving...' : 'Update Sales Order' }}
+              </button>
+            </form>
+
           <!-- Drawer Footer Actions -->
           <div class="p-4 bg-[#F4F6FA] border-t border-slate-200 flex items-center justify-between">
             <span class="text-xs text-slate-500">
               Internal Ledger ID: #{{ selectedOrder.id }}
             </span>
 
+            <button
+              type="button"
+              @click="exportOrderPdf(selectedOrder)"
+              class="inline-flex items-center gap-2 border border-slate-300 bg-white text-[#042562] px-4 py-2 rounded-lg text-xs font-bold"
+            >
+              Export Sales Order PDF
+            </button>
             <button
               v-if="selectedOrder.balance_due > 0"
               @click="openPaymentModal(selectedOrder)"
@@ -764,6 +806,13 @@ const currencyCode = computed(() => settings.currencyCode);
 
 const loading = ref(false);
 const submitting = ref(false);
+const savingOrder = ref(false);
+const orderEdit = ref({
+  status: 'CONFIRMED',
+  payment_status: 'UNPAID',
+  payment_reference: '',
+  notes: '',
+});
 const orders = ref([]);
 const counts = ref({});
 const metrics = ref({
@@ -807,7 +856,8 @@ const orderStatusTabs = [
   { label: 'All Orders', value: 'all' },
   { label: 'Confirmed', value: 'confirmed' },
   { label: 'Processing', value: 'processing' },
-  { label: 'Completed', value: 'completed' },
+  { label: 'Ready for Dispatch', value: 'ready_for_dispatch' },
+  { label: 'Delivered', value: 'completed' },
   { label: 'Cancelled', value: 'cancelled' },
 ];
 
@@ -834,6 +884,8 @@ function orderBadgeClass(status) {
       return 'bg-blue-100 text-[#042562] border border-blue-300';
     case 'PROCESSING':
       return 'bg-amber-100 text-amber-800 border border-amber-300';
+    case 'READY_FOR_DISPATCH':
+      return 'bg-indigo-100 text-indigo-800 border border-indigo-300';
     case 'COMPLETED':
       return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
     case 'CANCELLED':
@@ -886,7 +938,36 @@ function setOrderStatusTab(tab) {
 
 function openOrderDetailDrawer(order) {
   selectedOrder.value = order;
+  orderEdit.value = {
+    status: order.status || 'CONFIRMED',
+    payment_status: order.payment_status || 'UNPAID',
+    payment_reference: order.payment_reference || '',
+    notes: order.notes || '',
+  };
   detailDrawerOpen.value = true;
+}
+
+async function saveOrderUpdate() {
+  if (!selectedOrder.value) return;
+  savingOrder.value = true;
+  try {
+    const response = await salesOrderService.updateOrder(selectedOrder.value.id, orderEdit.value);
+    selectedOrder.value = response.data;
+    notify.success(response.message || 'Sales order updated.');
+    await fetchOrders();
+  } catch (error) {
+    notify.error(error.response?.data?.message || 'Could not update the sales order.');
+  } finally {
+    savingOrder.value = false;
+  }
+}
+
+async function exportOrderPdf(order) {
+  try {
+    await salesOrderService.downloadPdf(order.id, order.order_number);
+  } catch (error) {
+    notify.error(error.response?.data?.message || 'Could not export the sales order PDF.');
+  }
 }
 
 function openPaymentModal(order) {
