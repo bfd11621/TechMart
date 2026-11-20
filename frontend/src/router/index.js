@@ -182,6 +182,12 @@ const routes = [
     meta: { requiresAuth: true, permission: 'quotations.view', title: 'Quotation Requests (RFQs)' },
   },
   {
+    path: '/admin/quotations/prepare/:rfqId',
+    name: 'admin.quotations.prepare',
+    component: () => import('@/views/admin/QuotationPrepareView.vue'),
+    meta: { requiresAuth: true, permission: 'quotations.view', title: 'Prepare Formal Quotation' },
+  },
+  {
     path: '/admin/quotations',
     name: 'admin-quotations',
     component: () => import('@/views/admin/QuotationManagementView.vue'),

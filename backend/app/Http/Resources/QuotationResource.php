@@ -29,6 +29,7 @@ class QuotationResource extends JsonResource
             'status' => $this->status instanceof QuotationStatus ? $this->status->value : $this->status,
             'status_label' => $statusEnum?->label() ?? $this->status,
             'badge_variant' => $statusEnum?->badgeVariant() ?? 'neutral',
+            'currency' => $this->currency ?: 'ETB',
             'valid_until' => $this->valid_until?->format('Y-m-d'),
             'formatted_valid_until' => $this->valid_until?->format('M d, Y'),
             'is_expired' => $this->valid_until ? $this->valid_until->isPast() && $this->status !== QuotationStatus::CONVERTED : false,

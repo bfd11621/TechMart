@@ -24,6 +24,7 @@ class Quotation extends Model
         'billing_address',
         'status',
         'valid_until',
+        'currency',
         'subtotal',
         'discount_type',
         'discount_value',

@@ -213,7 +213,8 @@ class QuotationController extends Controller
                 $quotation,
                 $request->user(),
                 $recipient,
-                $request->input('message')
+                $request->input('message'),
+                $request->input('subject')
             );
 
             return response()->json([

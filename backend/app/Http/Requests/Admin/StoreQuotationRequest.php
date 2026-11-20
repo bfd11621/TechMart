@@ -23,6 +23,7 @@ class StoreQuotationRequest extends FormRequest
             'billing_address' => ['nullable', 'string', 'max:500'],
             'status' => ['nullable', 'string', 'in:DRAFT,PREPARED,SENT,APPROVED,REJECTED,EXPIRED,CONVERTED'],
             'valid_until' => ['nullable', 'date'],
+            'currency' => ['nullable', 'string', 'in:ETB,USD,SAR'],
             'discount_type' => ['nullable', 'string', 'in:fixed,percentage'],
             'discount_value' => ['nullable', 'numeric', 'min:0'],
             'tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],

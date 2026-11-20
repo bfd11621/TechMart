@@ -19,13 +19,14 @@ class QuotationSentMail extends Mailable
         public ?string $clientMessage,
         public string $pdfBinary,
         public string $filename,
+        public ?string $emailSubject = null,
     ) {
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "Quotation {$this->quotation->quotation_number} from iRACK IT Solution",
+            subject: $this->emailSubject ?: "Quotation {$this->quotation->quotation_number} from iRACK IT Solution",
         );
     }
 

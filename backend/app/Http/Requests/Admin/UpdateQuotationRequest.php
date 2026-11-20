@@ -21,6 +21,7 @@ class UpdateQuotationRequest extends FormRequest
             'company_name' => ['nullable', 'string', 'max:150'],
             'billing_address' => ['nullable', 'string', 'max:500'],
             'valid_until' => ['nullable', 'date'],
+            'currency' => ['nullable', 'string', 'in:ETB,USD,SAR'],
             'discount_type' => ['nullable', 'string', 'in:fixed,percentage'],
             'discount_value' => ['nullable', 'numeric', 'min:0'],
             'tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],

@@ -615,8 +615,8 @@ const saveAdminNotes = async () => {
 };
 
 const prepareQuotation = () => {
-  notify.info(`Navigating to Quotation Preparation for ${selectedRfq.value.rfq_number}...`);
-  // Will link directly to Quotation preparation in Phase 7
+  if (!selectedRfq.value?.id) return;
+  router.push({ name: 'admin.quotations.prepare', params: { rfqId: selectedRfq.value.id } });
 };
 
 onMounted(() => {

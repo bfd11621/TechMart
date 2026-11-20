@@ -49,7 +49,7 @@
             :to="item.path"
             :class="[
               'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors',
-              $route.path === item.path
+              isNavActive(item.path)
                 ? 'bg-[#1865C0] text-white shadow-sm'
                 : 'text-slate-300 hover:bg-navy-700/60 hover:text-white'
             ]"
@@ -154,7 +154,7 @@
               @click="mobileSidebarOpen = false"
               :class="[
                 'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors',
-                $route.path === item.path
+                isNavActive(item.path)
                   ? 'bg-[#1865C0] text-white shadow-sm'
                   : 'text-slate-300 hover:bg-navy-700/60 hover:text-white'
               ]"
@@ -320,8 +320,10 @@ const visibleNavItems = computed(() => {
   });
 });
 
+const isNavActive = (path) => route.path === path || route.path.startsWith(`${path}/`);
+
 const currentTitle = computed(() => {
-  const match = navItems.find(i => i.path === route.path);
+  const match = navItems.find((item) => isNavActive(item.path));
   return match ? match.label : 'Management Portal';
 });
 

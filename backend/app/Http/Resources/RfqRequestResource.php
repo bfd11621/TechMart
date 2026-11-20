@@ -37,6 +37,19 @@ class RfqRequestResource extends JsonResource
             ] : null,
             'items_count' => $this->items()->count(),
             'total_quantity' => (int) $this->items()->sum('quantity'),
+            'quotation' => $this->whenLoaded('quotation', function () {
+                if (!$this->quotation) {
+                    return null;
+                }
+
+                $status = $this->quotation->status;
+
+                return [
+                    'id' => $this->quotation->id,
+                    'quotation_number' => $this->quotation->quotation_number,
+                    'status' => $status instanceof \App\Enums\QuotationStatus ? $status->value : $status,
+                ];
+            }),
             'items' => RfqItemResource::collection($this->whenLoaded('items')),
             'status_histories' => RfqStatusHistoryResource::collection($this->whenLoaded('statusHistories')),
             'submitted_at' => $this->submitted_at?->toIso8601String(),

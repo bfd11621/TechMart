@@ -92,7 +92,7 @@ class QuotationService
             $totalAmount = round($discountedSubtotal + $taxAmount, 2);
 
             // Validity Date (defaults to +30 days price lock)
-            $validUntil = $data['valid_until'] ?? now()->addDays(30)->toDateString();
+            $validUntil = $data['valid_until'] ?? now()->addDays(15)->toDateString();
 
             $initialStatus = !empty($data['status'])
                 ? (QuotationStatus::tryFrom(strtoupper($data['status'])) ?? QuotationStatus::PREPARED)
@@ -109,6 +109,7 @@ class QuotationService
                 'billing_address' => $data['billing_address'] ?? null,
                 'status' => $initialStatus,
                 'valid_until' => $validUntil,
+                'currency' => $data['currency'] ?? 'ETB',
                 'subtotal' => $subtotal,
                 'discount_type' => $discountType,
                 'discount_value' => $discountValue,
@@ -224,6 +225,7 @@ class QuotationService
                 'company_name' => $data['company_name'] ?? $quotation->company_name,
                 'billing_address' => $data['billing_address'] ?? $quotation->billing_address,
                 'valid_until' => $data['valid_until'] ?? $quotation->valid_until,
+                'currency' => $data['currency'] ?? $quotation->currency ?? 'ETB',
                 'subtotal' => $subtotal,
                 'discount_type' => $discountType,
                 'discount_value' => $discountValue,
@@ -301,7 +303,7 @@ class QuotationService
     /**
      * Email the branded quotation PDF and mark an open quote as sent.
      */
-    public function sendToCustomer(Quotation $quotation, User $user, ?string $email = null, ?string $message = null): Quotation
+    public function sendToCustomer(Quotation $quotation, User $user, ?string $email = null, ?string $message = null, ?string $subject = null): Quotation
     {
         if ($quotation->status === QuotationStatus::CONVERTED) {
             throw new Exception('A converted quotation is already a sales order and cannot be emailed as an open proposal.');
@@ -324,7 +326,8 @@ class QuotationService
                 $quotation,
                 $note !== '' ? $note : null,
                 $pdf->output(),
-                $filename
+                $filename,
+                trim((string) $subject) !== '' ? trim((string) $subject) : null
             ));
         } catch (Throwable $exception) {
             throw new Exception('The quotation email could not be sent. '.$exception->getMessage());
@@ -362,9 +365,9 @@ class QuotationService
                 'name' => 'iRACK IT Solution',
                 'wordmark' => 'iRACK TECH-MART',
                 'tagline' => 'Enterprise Hardware Infrastructure & Turnkey Systems Integration',
-                'headquarters' => '100 Technology Parkway, Suite 400, Silicon Valley, CA 94016',
-                'phone' => '+1 (555) 019-2831 / +1 (800) 472-2548',
-                'email' => 'procurement@irack.com / sales@irack.com',
+                'headquarters' => '3rd Floor, Wastna Commercial Building, General Wingate St, Addis Ababa',
+                'phone' => '+251 94 642 8560',
+                'email' => 'dagicreative16@gmail.com',
                 'website' => 'https://www.irack.com',
                 'tax_id' => 'US-EIN-94-3829104',
             ],

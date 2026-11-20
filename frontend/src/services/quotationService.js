@@ -445,6 +445,7 @@ export const quotationService = {
       const response = await apiClient.post('/admin/quotations', payload);
       return response.data;
     } catch (error) {
+      if (error.response) throw error;
       console.warn('API call failed for creating quotation, simulating mock creation:', error.message);
       
       const newId = MOCK_QUOTATIONS.length + 1;
@@ -536,6 +537,7 @@ export const quotationService = {
       const response = await apiClient.put(`/admin/quotations/${id}`, payload);
       return response.data;
     } catch (error) {
+      if (error.response) throw error;
       console.warn(`API call failed for updating quotation #${id}:`, error.message);
       const quote = MOCK_QUOTATIONS.find(q => q.id === parseInt(id));
       if (!quote) throw new Error('Quotation not found');
@@ -629,8 +631,8 @@ export const quotationService = {
       window.URL.revokeObjectURL(downloadUrl);
       return true;
     } catch (error) {
+      if (error.response) throw error;
       console.warn(`PDF download failed for quotation #${id}:`, error.message);
-      // Fallback: trigger print simulation or alert
       window.print();
       return true;
     }

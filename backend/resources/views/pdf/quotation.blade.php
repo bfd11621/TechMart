@@ -221,6 +221,7 @@
     </style>
 </head>
 <body>
+    @php $currency = $quotation->currency ?: 'ETB'; @endphp
 
     <!-- Header Section -->
     <table class="header-table">
@@ -317,9 +318,9 @@
                 <th style="width: 5%; text-align: center;">#</th>
                 <th style="width: 47%;">Equipment Description & Specifications</th>
                 <th style="width: 10%; text-align: center;">Qty</th>
-                <th style="width: 13%; text-align: right;">Unit Price ($)</th>
+                <th style="width: 13%; text-align: right;">Unit Price ({{ $currency }})</th>
                 <th style="width: 10%; text-align: center;">Disc %</th>
-                <th style="width: 15%; text-align: right;">Total ($)</th>
+                <th style="width: 15%; text-align: right;">Total ({{ $currency }})</th>
             </tr>
         </thead>
         <tbody>
@@ -363,7 +364,7 @@
                     <tr>
                         <td style="color: #64748B;">Equipment Subtotal:</td>
                         <td style="text-align: right; font-weight: 700; font-family: monospace;">
-                            ${{ number_format($quotation->subtotal, 2) }}
+                            {{ $currency }} {{ number_format($quotation->subtotal, 2) }}
                         </td>
                     </tr>
                     @if($quotation->discount_amount > 0)
@@ -372,20 +373,20 @@
                                 Commercial Discount ({{ $quotation->discount_type === 'percentage' ? $quotation->discount_value . '%' : 'Fixed' }}):
                             </td>
                             <td style="text-align: right; font-weight: 700; color: #16A34A; font-family: monospace;">
-                                -${{ number_format($quotation->discount_amount, 2) }}
+                                -{{ $currency }} {{ number_format($quotation->discount_amount, 2) }}
                             </td>
                         </tr>
                     @endif
                     <tr>
                         <td style="color: #64748B;">Estimated VAT / Tax ({{ number_format($quotation->tax_rate, 1) }}%):</td>
                         <td style="text-align: right; font-weight: 700; font-family: monospace;">
-                            ${{ number_format($quotation->tax_amount, 2) }}
+                            {{ $currency }} {{ number_format($quotation->tax_amount, 2) }}
                         </td>
                     </tr>
                     <tr class="total-row">
                         <td>TOTAL AMOUNT (USD):</td>
                         <td style="text-align: right; font-family: monospace;">
-                            ${{ number_format($quotation->total_amount, 2) }}
+                            {{ $currency }} {{ number_format($quotation->total_amount, 2) }}
                         </td>
                     </tr>
                 </table>

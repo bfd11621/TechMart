@@ -15,6 +15,7 @@ class SendQuotationRequest extends FormRequest
     {
         return [
             'email' => ['nullable', 'email', 'max:255'],
+            'subject' => ['nullable', 'string', 'max:180'],
             'message' => ['nullable', 'string', 'max:2000'],
         ];
     }
