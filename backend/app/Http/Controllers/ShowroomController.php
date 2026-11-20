@@ -181,6 +181,8 @@ class ShowroomController extends Controller
             ->orderBy('sort_order')
             ->get();
 
+        Category::attachInventoryTotals($categories, true);
+
         return collect(CategoryResource::collection($categories)->resolve())
             ->map(function (array $category) {
                 $children = $category['children'] ?? [];
@@ -191,8 +193,10 @@ class ShowroomController extends Controller
                     $children = $children['data'];
                 }
                 $category['children'] = array_values(is_array($children) ? $children : []);
-                $category['products_count'] = (int) ($category['products_count'] ?? 0)
-                    + (int) collect($category['children'])->sum('products_count');
+                $category['products_count'] = (int) ($category['total_products_count']
+                    ?? ((int) ($category['products_count'] ?? 0) + (int) collect($category['children'])->sum('products_count')));
+                $category['stock_quantity'] = (int) ($category['total_stock_quantity']
+                    ?? ((int) ($category['stock_quantity'] ?? 0) + (int) collect($category['children'])->sum('stock_quantity')));
 
                 return $category;
             })

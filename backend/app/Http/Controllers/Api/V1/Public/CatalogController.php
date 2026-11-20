@@ -37,6 +37,8 @@ class CatalogController extends Controller
             ->orderBy('sort_order')
             ->get();
 
+        Category::attachInventoryTotals($categories, true);
+
         return $this->successResponse(
             CategoryResource::collection($categories),
             'Public categories retrieved.'
@@ -129,6 +131,12 @@ class CatalogController extends Controller
 
         $perPage = max(6, min(48, (int) $request->query('per_page', 12)));
         $products = $query->paginate($perPage);
+        $products->getCollection()->transform(function (Product $product) {
+            $product->setAttribute('total_stock', (int) $product->inventories->sum('quantity'));
+            $product->setAttribute('available_stock', $product->availableStock());
+
+            return $product;
+        });
 
         return $this->paginatedResponse($products, 'Showroom products retrieved.');
     }

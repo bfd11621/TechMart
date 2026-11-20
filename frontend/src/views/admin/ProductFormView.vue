@@ -93,9 +93,12 @@
                 class="w-full py-2 px-3 text-xs rounded-md border border-slate-300 bg-white text-slate-800 focus:outline-none focus:border-[#1865C0]"
               >
                 <option value="" disabled>Select category...</option>
-                <option v-for="c in categories" :key="c.id" :value="c.id">
-                  {{ c.parent_id ? '— ' + c.name : c.name }}
-                </option>
+                <optgroup v-for="parent in categoryGroups" :key="parent.id" :label="parent.name">
+                  <option :value="parent.id">{{ parent.name }}</option>
+                  <option v-for="child in parent.children" :key="child.id" :value="child.id">
+                    {{ child.name }}
+                  </option>
+                </optgroup>
               </select>
             </div>
 
@@ -121,6 +124,34 @@
                 v-model="form.warranty_info"
                 label="Warranty & SLA Terms"
                 placeholder="e.g. 3 Years ProSupport Next Business Day"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-[#172033] uppercase tracking-wider mb-1.5">
+                Store Branch
+              </label>
+              <select
+                v-model="form.store_id"
+                class="w-full py-2 px-3 text-xs rounded-md border border-slate-300 bg-white text-slate-800 focus:outline-none focus:border-[#1865C0]"
+              >
+                <option value="">Select store branch...</option>
+                <option v-for="store in stores" :key="store.id" :value="store.id">
+                  {{ store.name }}
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-[#172033] uppercase tracking-wider mb-1.5">
+                Stock Quantity
+              </label>
+              <input
+                v-model.number="form.stock_quantity"
+                type="number"
+                min="0"
+                step="1"
+                class="w-full py-2 px-3 text-xs rounded-md border border-slate-300 bg-white text-slate-800 focus:outline-none focus:border-[#1865C0]"
               />
             </div>
 
@@ -626,6 +657,7 @@ import BaseButton from '@/components/common/BaseButton.vue';
 import { adminProductService } from '@/services/adminProductService';
 import { adminCategoryService } from '@/services/adminCategoryService';
 import { adminBrandService } from '@/services/adminBrandService';
+import { storeService } from '@/services/storeService';
 import { useNotificationStore } from '@/stores/notificationStore';
 import {
   Save,
@@ -650,6 +682,24 @@ const currentTab = ref('general');
 
 const categories = ref([]);
 const brands = ref([]);
+const stores = ref([]);
+
+const childList = (node) => {
+  const children = node?.children;
+  if (Array.isArray(children)) return children;
+  if (Array.isArray(children?.data)) return children.data;
+  return [];
+};
+
+const categoryGroups = computed(() => {
+  const list = Array.isArray(categories.value) ? categories.value : [];
+  const roots = list.filter((category) => !category.parent_id);
+  const source = roots.length ? roots : list;
+  return source.map((parent) => ({
+    ...parent,
+    children: childList(parent),
+  }));
+});
 
 const tabs = [
   { id: 'general', label: 'General & Classification', icon: Sliders },
@@ -673,6 +723,8 @@ const form = ref({
   is_featured: false,
   is_published: true,
   availability_status: 'IN_STOCK',
+  store_id: '',
+  stock_quantity: 0,
   datasheet_url: '',
   datasheet_filename: '',
   images: [],
@@ -848,25 +900,27 @@ const defaultFullBrands = [
 
 const loadFormData = async () => {
   try {
-    const [catsRes, brandsRes] = await Promise.all([
-      adminCategoryService.getCategories(),
+    const [catsRes, brandsRes, storesRes] = await Promise.all([
+      adminCategoryService.getTree(),
       adminBrandService.getBrands(),
+      storeService.getStores(),
     ]);
-    if (catsRes && catsRes.data) categories.value = catsRes.data;
+    categories.value = Array.isArray(catsRes?.data) ? catsRes.data : [];
+    if (!categories.value.length) {
+      notify.error('No categories were returned. Add categories before registering a product.');
+    }
     if (brandsRes && brandsRes.data && brandsRes.data.length > 0) {
       brands.value = brandsRes.data;
     } else {
       brands.value = defaultFullBrands;
     }
+    const storeRows = storesRes?.data?.data || storesRes?.data || [];
+    stores.value = Array.isArray(storeRows) ? storeRows : [];
   } catch (err) {
-    categories.value = [
-      { id: 1, name: 'Servers and Workstations' },
-      { id: 2, name: 'Networking Equipment' },
-      { id: 3, name: 'Storage Solutions' },
-      { id: 4, name: 'Power Solutions' },
-      { id: 8, name: 'Data Center Infrastructure' },
-    ];
+    categories.value = [];
     brands.value = defaultFullBrands;
+    stores.value = [];
+    notify.error('Could not load categories or store branches.');
   }
 
   // If editing an existing product
@@ -891,6 +945,8 @@ const loadFormData = async () => {
           is_featured: p.is_featured,
           is_published: p.is_published,
           availability_status: p.availability_status || 'IN_STOCK',
+          store_id: '',
+          stock_quantity: 0,
           datasheet_url: p.datasheet_url || '',
           datasheet_filename: p.datasheet_filename || '',
           images: p.images ? p.images.map(i => ({ image_url: i.url || i.image_url, is_primary: i.is_primary })) : [],
@@ -923,6 +979,15 @@ const loadFormData = async () => {
 
         if (p.datasheet_url && (p.datasheet_url.startsWith('http') && !p.datasheet_url.includes('/storage/'))) {
           datasheetUploadMode.value = 'url';
+        }
+
+        const inventoryRows = p.store_inventories || p.inventories || [];
+        const preferred = [...inventoryRows].sort(
+          (a, b) => Number(b.quantity || 0) - Number(a.quantity || 0)
+        )[0];
+        if (preferred) {
+          form.value.store_id = preferred.store_id;
+          form.value.stock_quantity = Number(preferred.quantity || 0);
         }
       }
     } catch (err) {
@@ -976,6 +1041,12 @@ const handleSubmit = async () => {
     return;
   }
 
+  if (Number(form.value.stock_quantity) > 0 && !form.value.store_id) {
+    notify.error('Select a store branch for the stock quantity.');
+    currentTab.value = 'general';
+    return;
+  }
+
   saving.value = true;
   try {
     // Construct FormData object to seamlessly transmit files & data
@@ -995,6 +1066,10 @@ const handleSubmit = async () => {
     formData.append('is_featured', form.value.is_featured ? '1' : '0');
     formData.append('is_published', form.value.is_published ? '1' : '0');
     formData.append('availability_status', form.value.availability_status || 'IN_STOCK');
+    if (form.value.store_id) {
+      formData.append('store_id', form.value.store_id);
+      formData.append('stock_quantity', Math.max(0, Number(form.value.stock_quantity) || 0));
+    }
 
     // 2. Key Highlights / Bullet Features
     if (form.value.key_features && form.value.key_features.length) {

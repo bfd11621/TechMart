@@ -25,7 +25,7 @@
       <div class="corporate-card overflow-hidden">
         <div class="p-4 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between">
           <span class="text-xs font-bold text-[#042562] uppercase tracking-wider">
-            9 Core Enterprise Categories & Subcategories
+            {{ rootCategories.length }} Categories & Subcategories
           </span>
           <span class="text-xs text-slate-500">
             Total Product Lines: <strong class="text-slate-800">{{ rootCategories.length }}</strong>
@@ -56,7 +56,10 @@
               <!-- Metrics & Controls -->
               <div class="flex items-center gap-4">
                 <span class="text-xs font-semibold px-2.5 py-1 rounded-md bg-blue-50 text-[#1865C0] border border-blue-200">
-                  {{ root.products_count || 0 }} products
+                  {{ root.total_products_count ?? root.products_count ?? 0 }} products
+                </span>
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  {{ root.total_stock_quantity ?? root.stock_quantity ?? 0 }} in stock
                 </span>
 
                 <button
@@ -112,7 +115,7 @@
 
                 <div class="flex items-center gap-3">
                   <span class="text-[11px] font-semibold text-slate-500">
-                    {{ sub.products_count || 0 }} products
+                    {{ sub.products_count || 0 }} products · {{ sub.stock_quantity || 0 }} in stock
                   </span>
                   <div class="flex items-center gap-1">
                     <button
@@ -363,8 +366,11 @@ const defaultTree = [
 const fetchCategories = async () => {
   try {
     const res = await adminCategoryService.getTree();
-    if (res.success && res.data?.length > 0) {
-      rootCategories.value = res.data;
+    if (res.success && Array.isArray(res.data)) {
+      rootCategories.value = res.data.map((node) => ({
+        ...node,
+        children: Array.isArray(node.children) ? node.children : (node.children?.data || []),
+      }));
     } else {
       rootCategories.value = defaultTree;
     }

@@ -47,6 +47,8 @@ class StoreProductRequest extends FormRequest
             'image_urls' => ['nullable'],
             'primary_image_index' => ['nullable'],
             'primary_image_url' => ['nullable', 'string'],
+            'store_id' => ['nullable', 'required_with:stock_quantity', 'integer', 'exists:stores,id'],
+            'stock_quantity' => ['nullable', 'integer', 'min:0'],
         ];
     }
 }

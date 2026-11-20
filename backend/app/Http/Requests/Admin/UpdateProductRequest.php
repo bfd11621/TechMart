@@ -57,6 +57,8 @@ class UpdateProductRequest extends FormRequest
             'images.*.image_url' => ['nullable', 'string'],
             'images.*.is_primary' => ['nullable'],
             'images.*.sort_order' => ['nullable', 'integer'],
+            'store_id' => ['nullable', 'required_with:stock_quantity', 'integer', 'exists:stores,id'],
+            'stock_quantity' => ['nullable', 'integer', 'min:0'],
         ];
     }
 }

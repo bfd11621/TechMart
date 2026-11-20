@@ -20,21 +20,19 @@
         <div
           :class="[
             'inline-flex items-center rounded-full shadow-xs border transition-all duration-300 ease-in-out overflow-hidden',
-            'h-5 px-1.5 max-w-[20px] group-hover:max-w-[130px] group-hover:px-2 group-hover:gap-1.5',
-            product.availability_status === 'in_stock'
+            'h-5 px-2 max-w-[140px] gap-1.5',
+            stockQty > 0
               ? 'bg-emerald-50/95 border-emerald-200/90 text-emerald-700'
               : 'bg-amber-50/95 border-amber-200/90 text-amber-700'
           ]"
-          :title="product.availability_label || (product.availability_status === 'in_stock' ? 'In Stock' : 'Pre-Order')"
+          :title="stockLabel"
         >
           <span
             class="w-1.5 h-1.5 rounded-full flex-shrink-0"
-            :class="product.availability_status === 'in_stock' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'"
+            :class="stockQty > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'"
           ></span>
-          <span
-            class="text-[10px] font-bold whitespace-nowrap overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-300 select-none leading-none"
-          >
-            {{ product.availability_label || (product.availability_status === 'in_stock' ? 'In Stock' : 'Pre-Order') }}
+          <span class="text-[10px] font-bold whitespace-nowrap leading-none">
+            {{ stockLabel }}
           </span>
         </div>
       </div>
@@ -189,16 +187,16 @@
           <span
             :class="[
               'text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1',
-              product.availability_status === 'in_stock'
+              stockQty > 0
                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                 : 'bg-amber-50 text-amber-700 border border-amber-200',
             ]"
           >
             <span
               class="w-2 h-2 rounded-full"
-              :class="product.availability_status === 'in_stock' ? 'bg-emerald-500' : 'bg-amber-500'"
+              :class="stockQty > 0 ? 'bg-emerald-500' : 'bg-amber-500'"
             ></span>
-            {{ product.availability_label || (product.availability_status === 'in_stock' ? 'In Stock' : 'Pre-Order') }}
+            {{ stockLabel }}
           </span>
         </div>
 
@@ -300,6 +298,27 @@ defineEmits(['quick-view']);
 const cart = useCartStore();
 const compare = useCompareStore();
 const notify = useNotificationStore();
+
+const stockQty = computed(() => {
+  const product = props.product;
+  if (product.available_stock !== undefined && product.available_stock !== null) {
+    return Number(product.available_stock);
+  }
+  if (product.total_stock !== undefined && product.total_stock !== null && !product.inventories) {
+    return Number(product.total_stock);
+  }
+  if (Array.isArray(product.inventories)) {
+    return product.inventories.reduce(
+      (sum, row) => sum + Math.max(0, Number(row.quantity || 0) - Number(row.reserved_quantity || 0)),
+      0
+    );
+  }
+  return Number(product.total_stock || 0);
+});
+
+const stockLabel = computed(() => (
+  stockQty.value > 0 ? `${stockQty.value} in stock` : 'Out of stock'
+));
 
 const imageUrl = computed(() => {
   const image = props.product.primary_image;

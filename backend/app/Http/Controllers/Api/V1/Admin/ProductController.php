@@ -7,13 +7,18 @@ use App\Http\Requests\Admin\StoreProductRequest;
 use App\Http\Requests\Admin\UpdateProductRequest;
 use App\Http\Resources\ProductDetailResource;
 use App\Http\Resources\ProductResource;
+use App\Enums\StockMovementType;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductSpecification;
+use App\Models\StockMovement;
+use App\Models\StockMovementItem;
 use App\Models\Store;
 use App\Models\StoreInventory;
+use App\Models\User;
 use App\Services\AuditService;
 use App\Services\FileUploadService;
+use App\Services\InventoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -71,6 +76,12 @@ class ProductController extends Controller
 
         $perPage = max(5, min(100, (int) $request->query('per_page', 15)));
         $products = $query->orderBy('id', 'desc')->paginate($perPage);
+        $products->getCollection()->transform(function (Product $product) {
+            $product->setAttribute('total_stock', (int) $product->inventories->sum('quantity'));
+            $product->setAttribute('available_stock', $product->availableStock());
+
+            return $product;
+        });
 
         return $this->paginatedResponse($products, 'Products retrieved successfully.');
     }
@@ -183,7 +194,7 @@ class ProductController extends Controller
             $data['specifications'] = json_decode($data['specifications'], true) ?? [];
         }
 
-        $product = DB::transaction(function () use ($data, $imagesToCreate) {
+        $product = DB::transaction(function () use ($data, $imagesToCreate, $request) {
             $product = Product::create([
                 'category_id' => $data['category_id'],
                 'brand_id' => $data['brand_id'],
@@ -245,6 +256,8 @@ class ProductController extends Controller
                     'shelf_location' => null,
                 ]);
             }
+
+            $this->syncBranchStock($product, $data, $request->user());
 
             AuditService::log('PRODUCT_CREATED', $product, null, $product->toArray());
 
@@ -438,6 +451,8 @@ class ProductController extends Controller
                     ]);
                 }
             }
+
+            $this->syncBranchStock($product, $data, $request->user());
         });
 
         AuditService::log('PRODUCT_UPDATED', $product, $old, $product->toArray());
@@ -620,5 +635,69 @@ class ProductController extends Controller
         AuditService::log('PRODUCT_DELETED', null, ['name' => $name]);
 
         return $this->successResponse(null, "Product '{$name}' deleted from catalogue.");
+    }
+
+    /**
+     * Set on-hand quantity for one store branch and write the inventory ledger.
+     */
+    private function syncBranchStock(Product $product, array $data, ?User $user): void
+    {
+        if (!array_key_exists('stock_quantity', $data) || $data['stock_quantity'] === null || $data['stock_quantity'] === '') {
+            return;
+        }
+
+        $storeId = (int) ($data['store_id'] ?? 0);
+        if ($storeId <= 0) {
+            return;
+        }
+
+        $quantity = max(0, (int) $data['stock_quantity']);
+        $inventory = StoreInventory::firstOrCreate([
+            'store_id' => $storeId,
+            'product_id' => $product->id,
+        ], [
+            'quantity' => 0,
+            'reserved_quantity' => 0,
+            'min_alert_quantity' => 5,
+            'shelf_location' => null,
+        ]);
+
+        $previous = (int) $inventory->quantity;
+        if ($previous === $quantity) {
+            return;
+        }
+
+        $inventory->update([
+            'quantity' => $quantity,
+            'last_movement_at' => now(),
+        ]);
+
+        if (!$user) {
+            return;
+        }
+
+        $delta = $quantity - $previous;
+        $movement = StockMovement::create([
+            'movement_number' => InventoryService::generateMovementNumber($delta > 0 ? 'RCV' : 'ADJ'),
+            'type' => $delta > 0 && $previous === 0 ? StockMovementType::RECEIVE : StockMovementType::ADJUSTMENT,
+            'status' => 'COMPLETED',
+            'source_store_id' => $delta < 0 ? $storeId : null,
+            'destination_store_id' => $delta >= 0 ? $storeId : null,
+            'reference_type' => 'Product',
+            'reference_id' => $product->id,
+            'user_id' => $user->id,
+            'reason' => 'Product catalogue stock update',
+            'notes' => "On-hand quantity set from {$previous} to {$quantity}.",
+        ]);
+
+        StockMovementItem::create([
+            'stock_movement_id' => $movement->id,
+            'product_id' => $product->id,
+            'quantity' => abs($delta),
+            'previous_quantity' => $previous,
+            'new_quantity' => $quantity,
+            'unit_cost' => (float) ($product->cost_price ?? 0),
+            'notes' => 'Catalogue stock edit',
+        ]);
     }
 }

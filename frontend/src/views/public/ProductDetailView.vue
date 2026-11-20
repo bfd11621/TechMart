@@ -142,7 +142,7 @@
               <div class="flex items-center gap-2">
                 <span
                   class="w-2.5 h-2.5 rounded-full"
-                  :class="product.availability_status === 'in_stock' ? 'bg-[#16A34A]' : 'bg-[#F59E0B]'"
+                  :class="detailStockQty > 0 ? 'bg-[#16A34A]' : 'bg-[#F59E0B]'"
                 ></span>
                 <span class="text-xs font-bold uppercase tracking-wider text-[#042562]">
                   Multi-Store Inventory Status
@@ -151,12 +151,12 @@
               <span
                 :class="[
                   'text-xs font-black px-2.5 py-0.5 rounded-full',
-                  product.availability_status === 'in_stock'
+                  detailStockQty > 0
                     ? 'bg-emerald-100 text-emerald-800'
                     : 'bg-amber-100 text-amber-800',
                 ]"
               >
-                {{ product.availability_label || (product.availability_status === 'in_stock' ? 'In Stock' : 'Pre-Order') }}
+                {{ detailStockLabel }}
               </span>
             </div>
 
@@ -548,18 +548,31 @@ const groupedSpecs = computed(() => {
   return groups;
 });
 
+const detailStockQty = computed(() => {
+  const current = product.value;
+  if (!current) return 0;
+  if (current.available_stock !== undefined && current.available_stock !== null) {
+    return Number(current.available_stock);
+  }
+  if (current.total_stock !== undefined && current.total_stock !== null) {
+    return Number(current.total_stock);
+  }
+  return branchInventory.value.reduce((sum, row) => sum + Number(row.quantity || 0), 0);
+});
+
+const detailStockLabel = computed(() => (
+  detailStockQty.value > 0 ? `${detailStockQty.value} in stock` : 'Out of stock'
+));
+
 const branchInventory = computed(() => {
-  if (product.value?.inventories && product.value.inventories.length) {
-    return product.value.inventories.map((inv) => ({
-      storeName: inv.store?.name || 'Distribution Hub',
-      quantity: inv.quantity,
+  const rows = product.value?.store_inventories || product.value?.inventories || [];
+  if (Array.isArray(rows) && rows.length) {
+    return rows.map((inv) => ({
+      storeName: inv.store_name || inv.store?.name || 'Store branch',
+      quantity: inv.available ?? inv.quantity ?? 0,
     }));
   }
-  return [
-    { storeName: 'Central Distribution Hub (HQ)', quantity: 15 },
-    { storeName: 'Downtown Commercial Branch', quantity: 5 },
-    { storeName: 'Airport Logistics Center', quantity: 8 },
-  ];
+  return [];
 });
 
 const datasheetUrl = computed(() => {

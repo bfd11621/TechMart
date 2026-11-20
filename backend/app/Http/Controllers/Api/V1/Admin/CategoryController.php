@@ -28,6 +28,8 @@ class CategoryController extends Controller
                 ->orderBy('sort_order')
                 ->get();
 
+            Category::attachInventoryTotals($categories);
+
             return $this->successResponse(
                 CategoryResource::collection($categories),
                 'Category hierarchy tree retrieved.'
@@ -49,6 +51,7 @@ class CategoryController extends Controller
         }
 
         $categories = $query->orderBy('sort_order')->orderBy('name')->get();
+        Category::attachInventoryTotals($categories);
 
         return $this->successResponse(
             CategoryResource::collection($categories),

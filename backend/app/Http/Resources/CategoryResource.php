@@ -18,7 +18,10 @@ class CategoryResource extends JsonResource
             'image_url' => $this->image_url,
             'sort_order' => (int) $this->sort_order,
             'is_active' => (bool) $this->is_active,
-            'products_count' => $this->whenCounted('products'),
+            'products_count' => (int) ($this->products_count ?? 0),
+            'stock_quantity' => (int) ($this->stock_quantity ?? 0),
+            'total_products_count' => (int) ($this->total_products_count ?? $this->products_count ?? 0),
+            'total_stock_quantity' => (int) ($this->total_stock_quantity ?? $this->stock_quantity ?? 0),
             'parent' => $this->whenLoaded('parent', function () {
                 return $this->parent ? [
                     'id' => $this->parent->id,
