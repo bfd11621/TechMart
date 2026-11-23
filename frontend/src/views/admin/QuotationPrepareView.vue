@@ -92,17 +92,32 @@
         </section>
 
         <section class="corporate-card overflow-hidden">
-          <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <h3 class="text-sm font-black text-[#042562]">Itemized hardware</h3>
-            <div class="flex items-center gap-2">
-              <select v-model="productToAdd" class="py-2 px-3 text-xs rounded-md border border-slate-300 bg-white max-w-xs">
-                <option value="">Add catalog product...</option>
-                <option v-for="product in catalog" :key="product.id" :value="product.id">
-                  {{ product.sku }} — {{ product.name }}
+          <div class="p-4 border-b border-slate-100 space-y-3">
+            <div class="flex items-center justify-between gap-3">
+              <h3 class="text-sm font-black text-[#042562]">Itemized hardware</h3>
+              <span class="text-[11px] font-semibold text-slate-500">{{ catalog.length }} catalog products</span>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] gap-2">
+              <input
+                v-model="catalogQuery"
+                type="search"
+                placeholder="Search name, SKU, or model"
+                class="w-full py-2 px-3 text-xs rounded-md border border-slate-300"
+                @input="onCatalogSearch"
+              />
+              <select v-model="productToAdd" class="w-full py-2 px-3 text-xs rounded-md border border-slate-300 bg-white">
+                <option value="">
+                  {{ catalogLoading ? 'Loading the product catalog...' : (catalog.length ? 'Choose a catalog product' : 'No products match this search') }}
+                </option>
+                <option v-for="product in catalog" :key="product.id" :value="String(product.id)">
+                  {{ product.sku }} — {{ product.name }}<template v-if="product.brand?.name"> · {{ product.brand.name }}</template> · {{ Number(product.base_price || 0).toLocaleString() }}
                 </option>
               </select>
-              <button type="button" class="px-3 py-2 rounded-lg bg-[#042562] text-white text-xs font-bold" @click="addCatalogItem">Add</button>
+              <button type="button" class="px-4 py-2 rounded-lg bg-[#042562] text-white text-xs font-bold disabled:opacity-50" :disabled="!productToAdd" @click="addCatalogItem">
+                Add line
+              </button>
             </div>
+            <p v-if="catalogError" class="text-[11px] font-semibold text-red-600">{{ catalogError }}</p>
           </div>
           <div class="overflow-x-auto">
             <table class="min-w-full text-xs">
@@ -110,9 +125,9 @@
                 <tr>
                   <th class="text-left p-3">Description</th>
                   <th class="text-right p-3 w-24">Qty</th>
-                  <th class="text-right p-3 w-32">Unit price</th>
+                  <th class="text-right p-3 w-32">Unit price ({{ form.currency }})</th>
                   <th class="text-right p-3 w-24">Disc %</th>
-                  <th class="text-right p-3 w-32">Line total</th>
+                  <th class="text-right p-3 w-32">Line total ({{ form.currency }})</th>
                   <th class="p-3 w-16"></th>
                 </tr>
               </thead>
@@ -205,7 +220,11 @@ const exporting = ref(false);
 const sendOpen = ref(false);
 const quotationId = ref(null);
 const catalog = ref([]);
+const catalogQuery = ref('');
+const catalogLoading = ref(false);
+const catalogError = ref('');
 const productToAdd = ref('');
+let catalogTimer = null;
 
 const defaultTerms = [
   '1. Price validity: quoted prices stay open for 15 days from the issue date.',
@@ -326,13 +345,42 @@ const loadInquiry = async () => {
   }
 };
 
-const loadCatalog = async () => {
+const loadCatalog = async (search = '') => {
+  catalogLoading.value = true;
+  catalogError.value = '';
   try {
-    const response = await adminProductService.getProducts({ per_page: 100 });
-    catalog.value = Array.isArray(response.data) ? response.data : [];
-  } catch {
+    const collected = [];
+    let page = 1;
+    let lastPage = 1;
+    do {
+      const response = await adminProductService.getProducts({
+        search: search || undefined,
+        per_page: 100,
+        page,
+      });
+      const rows = Array.isArray(response?.data) ? response.data : [];
+      collected.push(...rows);
+      lastPage = Number(response?.meta?.pagination?.last_page || 1);
+      page += 1;
+    } while (page <= lastPage && page <= 20);
+
+    catalog.value = collected
+      .filter((product) => product?.id && product?.name)
+      .sort((left, right) => String(left.name).localeCompare(String(right.name)));
+    if (!catalog.value.some((product) => String(product.id) === String(productToAdd.value))) {
+      productToAdd.value = '';
+    }
+  } catch (error) {
     catalog.value = [];
+    catalogError.value = error.response?.data?.message || 'The product catalog could not be loaded.';
+  } finally {
+    catalogLoading.value = false;
   }
+};
+
+const onCatalogSearch = () => {
+  clearTimeout(catalogTimer);
+  catalogTimer = setTimeout(() => loadCatalog(catalogQuery.value.trim()), 250);
 };
 
 const addCatalogItem = () => {

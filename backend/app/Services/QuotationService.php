@@ -10,6 +10,7 @@ use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\RfqRequest;
 use App\Models\Store;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
@@ -362,18 +363,19 @@ class QuotationService
         $pdf = Pdf::loadView('pdf.quotation', [
             'quotation' => $quotation,
             'company' => [
-                'name' => 'iRACK IT Solution',
+                'name' => SystemSetting::get('company_name', 'iRACK IT Solution') ?: 'iRACK IT Solution',
                 'wordmark' => 'iRACK TECH-MART',
-                'tagline' => 'Enterprise Hardware Infrastructure & Turnkey Systems Integration',
-                'headquarters' => '3rd Floor, Wastna Commercial Building, General Wingate St, Addis Ababa',
-                'phone' => '+251 94 642 8560',
+                'tagline' => 'Enterprise IT Hardware',
+                'headquarters' => SystemSetting::get('company_address', '3rd Floor, Wastna Commercial Building, General Wingate St, Addis Ababa')
+                    ?: '3rd Floor, Wastna Commercial Building, General Wingate St, Addis Ababa',
+                'phone' => SystemSetting::get('company_phone', '+251 94 642 8560') ?: '+251 94 642 8560',
                 'email' => 'dagicreative16@gmail.com',
-                'website' => 'https://www.irack.com',
-                'tax_id' => 'US-EIN-94-3829104',
+                'vat_number' => SystemSetting::get('pdf_vat_number', '') ?: '',
             ],
         ]);
 
         $pdf->setPaper('A4', 'portrait');
+        $pdf->setOption('isPhpEnabled', true);
 
         return $pdf;
     }

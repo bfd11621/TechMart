@@ -5,7 +5,7 @@
     <title>Quotation {{ $quotation->quotation_number }} — iRACK IT Solution</title>
     <style>
         @page {
-            margin: 28px 36px 36px 36px;
+            margin: 108px 32px 72px 32px;
         }
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -21,10 +21,13 @@
         .red { color: #E20913; }
 
         .header-table {
+            position: fixed;
+            top: -92px;
+            left: 0;
+            right: 0;
             width: 100%;
             border-bottom: 2.5px solid #042562;
-            padding-bottom: 14px;
-            margin-bottom: 18px;
+            padding-bottom: 8px;
         }
         .header-logo {
             font-size: 26px;
@@ -209,14 +212,13 @@
 
         .footer {
             position: fixed;
-            bottom: 0;
+            bottom: -52px;
             left: 0;
             right: 0;
-            font-size: 8px;
-            color: #94A3B8;
-            text-align: center;
-            border-top: 1px solid #E2E8F0;
+            border-top: 2px solid #042562;
             padding-top: 6px;
+            font-size: 8px;
+            color: #475569;
         }
     </style>
 </head>
@@ -238,9 +240,11 @@
             <td style="width: 50%;" class="company-info">
                 <strong>{{ $company['name'] }}</strong><br>
                 {{ $company['headquarters'] }}<br>
-                Hotline: {{ $company['phone'] }}<br>
-                Procurement: {{ $company['email'] }}<br>
-                Portal: {{ $company['website'] }} | Tax ID: {{ $company['tax_id'] }}
+                {{ $company['phone'] }}<br>
+                {{ $company['email'] }}
+                @if(!empty($company['vat_number']))
+                    <br>VAT {{ $company['vat_number'] }}
+                @endif
             </td>
         </tr>
     </table>
@@ -290,8 +294,8 @@
                             <td style="font-weight: 700; text-align: right;">{{ $quotation->created_at->format('M d, Y') }}</td>
                         </tr>
                         <tr>
-                            <td style="color: #64748B;">Price Lock Guarantee:</td>
-                            <td style="font-weight: 700; text-align: right; color: #16A34A;">30 Calendar Days</td>
+                            <td style="color: #64748B;">Currency:</td>
+                            <td style="font-weight: 700; text-align: right;">{{ $currency }}</td>
                         </tr>
                         <tr>
                             <td style="color: #64748B;">Valid Until:</td>
@@ -384,7 +388,7 @@
                         </td>
                     </tr>
                     <tr class="total-row">
-                        <td>TOTAL AMOUNT (USD):</td>
+                        <td>TOTAL AMOUNT ({{ $currency }}):</td>
                         <td style="text-align: right; font-family: monospace;">
                             {{ $currency }} {{ number_format($quotation->total_amount, 2) }}
                         </td>
@@ -400,7 +404,7 @@
             <td class="sig-block">
                 <div class="sig-line"></div>
                 <div class="sig-title">Authorized Solutions Officer — iRACK IT Solution</div>
-                <div style="font-size: 8px; color: #64748B;">{{ $quotation->preparedBy?->name ?? 'Alexander Vance' }} | Senior Solutions Architect</div>
+                <div style="font-size: 8px; color: #64748B;">{{ $quotation->preparedBy?->name ?? 'iRACK IT Solution' }}</div>
             </td>
             <td style="width: 8%;"></td>
             <td class="sig-block">
@@ -411,10 +415,23 @@
         </tr>
     </table>
 
-    <!-- Document Footer -->
-    <div class="footer">
-        iRACK IT Solution Commercial Document Ref: {{ $quotation->quotation_number }} | Page 1 of 1 | This quotation is governed by iRACK IT Solution Master Services Agreement.
-    </div>
+    <table class="footer">
+        <tr>
+            <td style="width: 70%;">
+                <strong style="color: #042562;">{{ $company['name'] }}</strong>
+                · {{ $company['headquarters'] }}<br>
+                {{ $company['phone'] }} · {{ $company['email'] }}
+                · {{ $quotation->quotation_number }}
+            </td>
+            <td style="width: 30%;"></td>
+        </tr>
+    </table>
+    <script type="text/php">
+        if (isset($pdf)) {
+            $font = $fontMetrics->getFont('Helvetica', 'bold');
+            $pdf->page_text($pdf->get_width() - 92, $pdf->get_height() - 38, 'Page {PAGE_NUM} of {PAGE_COUNT}', $font, 8, [0.016, 0.145, 0.384]);
+        }
+    </script>
 
 </body>
 </html>

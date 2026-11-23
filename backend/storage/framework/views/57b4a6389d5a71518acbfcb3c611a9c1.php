@@ -5,7 +5,7 @@
     <title>Quotation <?php echo e($quotation->quotation_number); ?> — iRACK IT Solution</title>
     <style>
         @page {
-            margin: 28px 36px 36px 36px;
+            margin: 108px 32px 72px 32px;
         }
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -21,10 +21,13 @@
         .red { color: #E20913; }
 
         .header-table {
+            position: fixed;
+            top: -92px;
+            left: 0;
+            right: 0;
             width: 100%;
             border-bottom: 2.5px solid #042562;
-            padding-bottom: 14px;
-            margin-bottom: 18px;
+            padding-bottom: 8px;
         }
         .header-logo {
             font-size: 26px;
@@ -209,18 +212,18 @@
 
         .footer {
             position: fixed;
-            bottom: 0;
+            bottom: -52px;
             left: 0;
             right: 0;
-            font-size: 8px;
-            color: #94A3B8;
-            text-align: center;
-            border-top: 1px solid #E2E8F0;
+            border-top: 2px solid #042562;
             padding-top: 6px;
+            font-size: 8px;
+            color: #475569;
         }
     </style>
 </head>
 <body>
+    <?php $currency = $quotation->currency ?: 'ETB'; ?>
 
     <!-- Header Section -->
     <table class="header-table">
@@ -237,10 +240,13 @@
             <td style="width: 50%;" class="company-info">
                 <strong><?php echo e($company['name']); ?></strong><br>
                 <?php echo e($company['headquarters']); ?><br>
-                Hotline: <?php echo e($company['phone']); ?><br>
-                Procurement: <?php echo e($company['email']); ?><br>
-                Portal: <?php echo e($company['website']); ?> | Tax ID: <?php echo e($company['tax_id']); ?>
+                <?php echo e($company['phone']); ?><br>
+                <?php echo e($company['email']); ?>
 
+                <?php if(!empty($company['vat_number'])): ?>
+                    <br>VAT <?php echo e($company['vat_number']); ?>
+
+                <?php endif; ?>
             </td>
         </tr>
     </table>
@@ -291,8 +297,8 @@
                             <td style="font-weight: 700; text-align: right;"><?php echo e($quotation->created_at->format('M d, Y')); ?></td>
                         </tr>
                         <tr>
-                            <td style="color: #64748B;">Price Lock Guarantee:</td>
-                            <td style="font-weight: 700; text-align: right; color: #16A34A;">30 Calendar Days</td>
+                            <td style="color: #64748B;">Currency:</td>
+                            <td style="font-weight: 700; text-align: right;"><?php echo e($currency); ?></td>
                         </tr>
                         <tr>
                             <td style="color: #64748B;">Valid Until:</td>
@@ -319,9 +325,9 @@
                 <th style="width: 5%; text-align: center;">#</th>
                 <th style="width: 47%;">Equipment Description & Specifications</th>
                 <th style="width: 10%; text-align: center;">Qty</th>
-                <th style="width: 13%; text-align: right;">Unit Price ($)</th>
+                <th style="width: 13%; text-align: right;">Unit Price (<?php echo e($currency); ?>)</th>
                 <th style="width: 10%; text-align: center;">Disc %</th>
-                <th style="width: 15%; text-align: right;">Total ($)</th>
+                <th style="width: 15%; text-align: right;">Total (<?php echo e($currency); ?>)</th>
             </tr>
         </thead>
         <tbody>
@@ -368,7 +374,7 @@
                     <tr>
                         <td style="color: #64748B;">Equipment Subtotal:</td>
                         <td style="text-align: right; font-weight: 700; font-family: monospace;">
-                            $<?php echo e(number_format($quotation->subtotal, 2)); ?>
+                            <?php echo e($currency); ?> <?php echo e(number_format($quotation->subtotal, 2)); ?>
 
                         </td>
                     </tr>
@@ -378,7 +384,7 @@
                                 Commercial Discount (<?php echo e($quotation->discount_type === 'percentage' ? $quotation->discount_value . '%' : 'Fixed'); ?>):
                             </td>
                             <td style="text-align: right; font-weight: 700; color: #16A34A; font-family: monospace;">
-                                -$<?php echo e(number_format($quotation->discount_amount, 2)); ?>
+                                -<?php echo e($currency); ?> <?php echo e(number_format($quotation->discount_amount, 2)); ?>
 
                             </td>
                         </tr>
@@ -386,14 +392,14 @@
                     <tr>
                         <td style="color: #64748B;">Estimated VAT / Tax (<?php echo e(number_format($quotation->tax_rate, 1)); ?>%):</td>
                         <td style="text-align: right; font-weight: 700; font-family: monospace;">
-                            $<?php echo e(number_format($quotation->tax_amount, 2)); ?>
+                            <?php echo e($currency); ?> <?php echo e(number_format($quotation->tax_amount, 2)); ?>
 
                         </td>
                     </tr>
                     <tr class="total-row">
-                        <td>TOTAL AMOUNT (USD):</td>
+                        <td>TOTAL AMOUNT (<?php echo e($currency); ?>):</td>
                         <td style="text-align: right; font-family: monospace;">
-                            $<?php echo e(number_format($quotation->total_amount, 2)); ?>
+                            <?php echo e($currency); ?> <?php echo e(number_format($quotation->total_amount, 2)); ?>
 
                         </td>
                     </tr>
@@ -408,7 +414,7 @@
             <td class="sig-block">
                 <div class="sig-line"></div>
                 <div class="sig-title">Authorized Solutions Officer — iRACK IT Solution</div>
-                <div style="font-size: 8px; color: #64748B;"><?php echo e($quotation->preparedBy?->name ?? 'Alexander Vance'); ?> | Senior Solutions Architect</div>
+                <div style="font-size: 8px; color: #64748B;"><?php echo e($quotation->preparedBy?->name ?? 'iRACK IT Solution'); ?></div>
             </td>
             <td style="width: 8%;"></td>
             <td class="sig-block">
@@ -419,10 +425,25 @@
         </tr>
     </table>
 
-    <!-- Document Footer -->
-    <div class="footer">
-        iRACK IT Solution Commercial Document Ref: <?php echo e($quotation->quotation_number); ?> | Page 1 of 1 | This quotation is governed by iRACK IT Solution Master Services Agreement.
-    </div>
+    <table class="footer">
+        <tr>
+            <td style="width: 70%;">
+                <strong style="color: #042562;"><?php echo e($company['name']); ?></strong>
+                · <?php echo e($company['headquarters']); ?><br>
+                <?php echo e($company['phone']); ?> · <?php echo e($company['email']); ?>
+
+                · <?php echo e($quotation->quotation_number); ?>
+
+            </td>
+            <td style="width: 30%;"></td>
+        </tr>
+    </table>
+    <script type="text/php">
+        if (isset($pdf)) {
+            $font = $fontMetrics->getFont('Helvetica', 'bold');
+            $pdf->page_text($pdf->get_width() - 92, $pdf->get_height() - 38, 'Page {PAGE_NUM} of {PAGE_COUNT}', $font, 8, [0.016, 0.145, 0.384]);
+        }
+    </script>
 
 </body>
 </html>
