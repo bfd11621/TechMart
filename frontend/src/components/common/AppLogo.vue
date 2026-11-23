@@ -1,7 +1,14 @@
 <template>
   <div :class="['inline-flex items-center select-none', layoutClasses, customClass]">
+    <img
+      v-if="customLogo"
+      :src="customLogo"
+      alt="Company logo"
+      :class="['object-contain', iconOnly ? 'w-9 h-9' : imageSizeClasses]"
+    />
+
     <!-- Monogram Symbol (iR) -->
-    <div :class="['relative flex-shrink-0 flex items-center justify-center', symbolSizeClasses]">
+    <div v-else :class="['relative flex-shrink-0 flex items-center justify-center', symbolSizeClasses]">
       <svg
         viewBox="0 0 200 220"
         fill="none"
@@ -38,7 +45,7 @@
     </div>
 
     <!-- Wordmark / Typography (iRACK TECH-MART) -->
-    <div v-if="!iconOnly" :class="['flex flex-col', textAlignmentClasses]">
+    <div v-if="!iconOnly && !customLogo" :class="['flex flex-col', textAlignmentClasses]">
       <!-- iRACK line -->
       <div class="flex items-baseline leading-none tracking-tight font-black font-sans">
         <!-- Red stylized 'i' -->
@@ -70,6 +77,10 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useSettingsStore } from '@/stores/settingsStore';
+
+const settings = useSettingsStore();
+const customLogo = computed(() => (props.forceBuiltin ? '' : settings.logoUrl));
 
 const props = defineProps({
   variant: {
@@ -94,6 +105,10 @@ const props = defineProps({
   customClass: {
     type: String,
     default: '',
+  },
+  forceBuiltin: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -124,6 +139,20 @@ const symbolSizeClasses = computed(() => {
     case 'md':
     default:
       return 'w-10 h-11';
+  }
+});
+
+const imageSizeClasses = computed(() => {
+  switch (props.size) {
+    case 'sm':
+      return 'h-9 max-w-[150px]';
+    case 'lg':
+      return 'h-16 max-w-[240px]';
+    case 'xl':
+      return 'h-20 max-w-[280px]';
+    case 'md':
+    default:
+      return 'h-12 max-w-[200px]';
   }
 });
 

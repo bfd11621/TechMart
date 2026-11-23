@@ -229,10 +229,14 @@
     <table class="header-table">
         <tr>
             <td style="width: 50%; vertical-align: top;">
-                <div class="header-logo">
-                    <span class="red-dot">i</span>RACK
-                    <span class="sub">TECH-MART SOLUTIONS</span>
-                </div>
+                @if(!empty($company['logo_path']))
+                    <img src="{{ $company['logo_path'] }}" alt="{{ $company['name'] }}" style="height: 42px; width: auto;">
+                @else
+                    <div class="header-logo">
+                        <span class="red-dot">i</span>RACK
+                        <span class="sub">TECH-MART SOLUTIONS</span>
+                    </div>
+                @endif
                 <div style="font-size: 8.5px; color: #64748B; margin-top: 4px;">
                     Enterprise IT Infrastructure & Systems Integration
                 </div>

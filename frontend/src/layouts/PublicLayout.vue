@@ -452,6 +452,7 @@ import { useRouter } from 'vue-router';
 import { useCartStore } from '@/stores/cartStore';
 import { useCompareStore } from '@/stores/compareStore';
 import { configService } from '@/services/configService';
+import { useSettingsStore } from '@/stores/settingsStore';
 import AppLogo from '@/components/common/AppLogo.vue';
 import CompareDrawer from '@/components/common/CompareDrawer.vue';
 import {
@@ -471,6 +472,7 @@ import {
 const router = useRouter();
 const cart = useCartStore();
 const compare = useCompareStore();
+const settings = useSettingsStore();
 
 const searchQuery = ref('');
 const mobileMenuOpen = ref(false);
@@ -491,7 +493,11 @@ onMounted(async () => {
   try {
     const res = await configService.getPublicSettings();
     if (res && res.data) {
-      if (res.data.company) companyInfo.value = res.data.company;
+      if (res.data.company) {
+        companyInfo.value = res.data.company;
+        settings.applyCompany(res.data.company);
+      }
+      if (res.data.system) settings.applySystem(res.data.system);
       if (res.data.navigation) navigationSettings.value = res.data.navigation;
     }
   } catch (err) {

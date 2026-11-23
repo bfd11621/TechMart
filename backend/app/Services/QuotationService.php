@@ -373,6 +373,7 @@ class QuotationService
                 'phone' => SystemSetting::get('company_phone', '+251 94 642 8560') ?: '+251 94 642 8560',
                 'email' => 'dagicreative16@gmail.com',
                 'vat_number' => SystemSetting::get('pdf_vat_number', '') ?: '',
+                'logo_path' => SystemSetting::logoAbsolutePath(),
             ],
         ]);
 

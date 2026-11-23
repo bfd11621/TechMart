@@ -324,7 +324,7 @@ class ConfigurationService
         $defaults = [
             'company' => [
                 'company_name' => 'iRACK IT Solution Commercial Co.',
-                'company_logo_url' => '/images/logo.svg',
+                'company_logo_url' => '',
                 'company_description' => 'Enterprise datacenter servers, spine-leaf networking, SAN/NAS storage, and online power protection systems.',
                 'company_address' => '3rd Floor, Wastna Commercial Building, General Wingate St, Addis Ababa',
                 'company_phone' => '+251 94 642 8560',

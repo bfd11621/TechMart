@@ -4,7 +4,7 @@ import apiClient from './api';
 const MOCK_SETTINGS = {
   company: {
     company_name: 'iRACK IT Solution Commercial Co.',
-    company_logo_url: '/images/logo.svg',
+    company_logo_url: '',
     company_description: 'Enterprise datacenter servers, spine-leaf networking, SAN/NAS storage, and online power protection systems.',
     company_address: 'King Fahd Road, Al Olaya District, P.O. Box 49201, Riyadh 12211, Kingdom of Saudi Arabia',
     company_phone: '+966 11 492 8800',
@@ -163,13 +163,14 @@ export const configService = {
           settings.append('_method', 'PUT');
         }
         response = await apiClient.post(`/admin/settings/${group}`, settings, {
-          headers: { 'Content-Type': 'multipart/form-data' },
+          headers: { 'Content-Type': undefined },
         });
       } else {
         response = await apiClient.put(`/admin/settings/${group}`, { settings });
       }
       return response.data;
     } catch (error) {
+      if (error.response) throw error;
       console.warn(`API call failed for updating ${group} settings, updating local mock:`, error.message);
       const dataObj = settings instanceof FormData ? {} : settings;
       MOCK_SETTINGS[group] = { ...MOCK_SETTINGS[group], ...dataObj };

@@ -33,5 +33,13 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue';
 import AppLogo from '@/components/common/AppLogo.vue';
+import { useSettingsStore } from '@/stores/settingsStore';
+
+const settings = useSettingsStore();
+
+onMounted(() => {
+  settings.loadPublic();
+});
 </script>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -38,9 +39,10 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'company' => [
-                'name' => 'iRACK IT Solution',
-                'phone' => '+251 94 642 8560',
-                'email' => 'dagimw@iracktech.com',
+                'name' => SystemSetting::get('company_name', 'iRACK IT Solution') ?: 'iRACK IT Solution',
+                'phone' => SystemSetting::get('company_phone', '+251 94 642 8560') ?: '+251 94 642 8560',
+                'email' => SystemSetting::get('company_email', 'dagimw@iracktech.com') ?: 'dagimw@iracktech.com',
+                'logo_url' => SystemSetting::get('company_logo_url', '') ?: '',
             ],
             'staffPortalUrl' => rtrim((string) config('app.frontend_url'), '/').'/admin/login',
         ];

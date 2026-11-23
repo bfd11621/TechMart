@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Banner;
+use App\Models\SystemSetting;
 use App\Services\ConfigurationService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 
 class ConfigurationController extends Controller
@@ -48,6 +50,10 @@ class ConfigurationController extends Controller
             $settings = [];
         }
 
+        if ($group === 'company') {
+            $settings = $this->applyCompanyLogo($request, $settings);
+        }
+
         try {
             $updated = $this->configService->updateSettingsGroup(
                 $group,
@@ -68,6 +74,42 @@ class ConfigurationController extends Controller
                 'data' => $settings,
             ]);
         }
+    }
+
+    /**
+     * Store or remove the company logo uploaded with the company settings form.
+     */
+    private function applyCompanyLogo(Request $request, array $settings): array
+    {
+        if ($request->boolean('remove_logo')) {
+            $this->deleteStoredLogo();
+            $settings['company_logo_url'] = '';
+        }
+
+        if ($request->hasFile('logo')) {
+            $request->validate([
+                'logo' => ['file', 'max:2048', 'mimetypes:image/png,image/jpeg,image/webp,image/svg+xml'],
+            ]);
+
+            $this->deleteStoredLogo();
+            $file = $request->file('logo');
+            $extension = strtolower($file->getClientOriginalExtension() ?: 'png');
+            $path = $file->storeAs('branding', 'logo-'.now()->format('YmdHis').'.'.$extension, 'public');
+            $settings['company_logo_url'] = '/storage/'.$path;
+        }
+
+        return $settings;
+    }
+
+    private function deleteStoredLogo(): void
+    {
+        $current = SystemSetting::get('company_logo_url', '');
+        if (!is_string($current) || !str_starts_with($current, '/storage/branding/')) {
+            return;
+        }
+
+        $relative = ltrim(substr($current, strlen('/storage/')), '/');
+        Storage::disk('public')->delete($relative);
     }
 
     /**

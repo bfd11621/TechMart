@@ -536,6 +536,7 @@ class SalesOrderService
                 'address' => '3rd Floor, Wastna Commercial Building, General Wingate St, Addis Ababa',
                 'phone' => '+251 94 642 8560',
                 'email' => 'dagicreative16@gmail.com',
+                'logo_path' => \App\Models\SystemSetting::logoAbsolutePath(),
             ],
         ]);
         $pdf->setPaper('A4', 'portrait');

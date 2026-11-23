@@ -155,6 +155,33 @@
             <p class="text-[11px] text-slate-500">Official legal branding, headquarters location, and customer support channels.</p>
           </div>
 
+          <div class="rounded-xl border border-slate-200 bg-[#F4F6FA] p-4">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div class="h-20 w-44 rounded-lg bg-white border border-slate-200 flex items-center justify-center overflow-hidden px-3">
+                <img v-if="logoPreview" :src="logoPreview" alt="Logo preview" class="max-h-16 max-w-full object-contain" />
+                <AppLogo v-else variant="dark" size="sm" layout="horizontal" force-builtin />
+              </div>
+              <div class="text-xs">
+                <p class="font-bold text-[#042562]">Company logo</p>
+                <p class="text-slate-500 mt-1">PNG, JPG, WEBP, or SVG. Maximum 2 MB. The image replaces the logo in the showroom, staff portal, and quotation PDFs.</p>
+                <div class="mt-3 flex flex-wrap items-center gap-2">
+                  <label class="px-3 py-1.5 rounded-lg bg-[#042562] text-white font-bold cursor-pointer">
+                    Choose image
+                    <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="hidden" @change="onLogoSelected" />
+                  </label>
+                  <button
+                    v-if="logoPreview || formCompany.company_logo_url"
+                    type="button"
+                    class="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-600 font-bold"
+                    @click="clearLogo"
+                  >
+                    Use default mark
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             <div>
               <label class="block font-bold text-slate-700 mb-1">Company Legal Name *</label>
@@ -869,6 +896,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import AdminLayout from '@/layouts/AdminLayout.vue';
+import AppLogo from '@/components/common/AppLogo.vue';
 import { configService } from '@/services/configService';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useNotificationStore } from '@/stores/notificationStore';
@@ -892,6 +920,10 @@ import {
 } from 'lucide-vue-next';
 
 const notify = useNotificationStore();
+const settings = useSettingsStore();
+const logoFile = ref(null);
+const logoPreview = ref('');
+const removeLogo = ref(false);
 
 const activeTab = ref('banners');
 const saving = ref(false);
@@ -922,6 +954,7 @@ const bannerForm = ref({
 
 const formCompany = ref({
   company_name: '',
+  company_logo_url: '',
   company_website: '',
   company_email: '',
   company_phone: '',
@@ -987,7 +1020,15 @@ async function loadAllSettings() {
     banners.value = bannersRes.data || [];
 
     // Map into forms
-    if (s.company) formCompany.value = { ...formCompany.value, ...s.company };
+    if (s.company) {
+      formCompany.value = {
+        ...formCompany.value,
+        ...s.company,
+        social_links: { ...formCompany.value.social_links, ...(s.company.social_links || {}) },
+      };
+      settings.applyCompany(s.company);
+      logoPreview.value = settings.logoUrl || '';
+    }
     if (s.merchandising) formMerchandising.value = { ...formMerchandising.value, ...s.merchandising };
     if (s.navigation) formNavigation.value = { ...formNavigation.value, ...s.navigation };
     if (s.email) {
@@ -1067,13 +1108,54 @@ async function moveBanner(index, direction) {
 }
 
 // Company Settings
+function onLogoSelected(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    notify.error('The logo must be 2 MB or smaller.');
+    event.target.value = '';
+    return;
+  }
+  logoFile.value = file;
+  removeLogo.value = false;
+  logoPreview.value = URL.createObjectURL(file);
+}
+
+function clearLogo() {
+  logoFile.value = null;
+  removeLogo.value = true;
+  logoPreview.value = '';
+  formCompany.value.company_logo_url = '';
+}
+
 async function saveCompanySettings() {
   saving.value = true;
   try {
-    await configService.updateGroup('company', formCompany.value);
+    let payload = formCompany.value;
+    if (logoFile.value || removeLogo.value) {
+      payload = new FormData();
+      payload.append('settings', JSON.stringify({
+        ...formCompany.value,
+        company_logo_url: removeLogo.value ? '' : formCompany.value.company_logo_url,
+      }));
+      if (logoFile.value) payload.append('logo', logoFile.value);
+      if (removeLogo.value) payload.append('remove_logo', '1');
+    }
+    const response = await configService.updateGroup('company', payload);
+    if (response?.data) {
+      formCompany.value = {
+        ...formCompany.value,
+        ...response.data,
+        social_links: { ...formCompany.value.social_links, ...(response.data.social_links || {}) },
+      };
+      settings.applyCompany(response.data);
+      logoPreview.value = settings.logoUrl || '';
+    }
+    logoFile.value = null;
+    removeLogo.value = false;
     notify.success('Company information updated successfully');
   } catch (err) {
-    notify.error('Failed to update company info');
+    notify.error(err.response?.data?.message || 'Failed to update company info');
   } finally {
     saving.value = false;
   }

@@ -23,7 +23,11 @@
     <table>
         <tr>
             <td>
-                <h1>iRACK <span style="color:#E20913;">TECH-MART</span></h1>
+                @if(!empty($company['logo_path']))
+                    <img src="{{ $company['logo_path'] }}" alt="{{ $company['name'] }}" style="height: 42px; width: auto;">
+                @else
+                    <h1>iRACK <span style="color:#E20913;">TECH-MART</span></h1>
+                @endif
                 <div class="muted">{{ $company['address'] }}<br>{{ $company['phone'] }} · {{ $company['email'] }}</div>
             </td>
             <td class="right">

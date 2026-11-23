@@ -102,6 +102,31 @@ class SystemSetting extends Model
     /**
      * Helper static setter
      */
+    /**
+     * Local file for an uploaded company logo, when one is stored on the public disk.
+     */
+    public static function logoAbsolutePath(): ?string
+    {
+        $url = static::get('company_logo_url', '');
+        if (!is_string($url) || !str_starts_with($url, '/storage/branding/')) {
+            return null;
+        }
+
+        $relative = ltrim(substr($url, strlen('/storage/')), '/');
+        $candidates = [
+            public_path('storage/'.$relative),
+            storage_path('app/public/'.$relative),
+        ];
+
+        foreach ($candidates as $path) {
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
     public static function set(string $key, mixed $value, string $group = 'system', string $type = 'string', bool $isPublic = false): static
     {
         $setting = static::firstOrNew(['key' => $key]);
