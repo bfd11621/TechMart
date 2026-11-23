@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api\V1\Public;
 
 use App\Http\Controllers\Controller;
+use App\Models\Inquiry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
 class ContactController extends Controller
@@ -16,6 +18,7 @@ class ContactController extends Controller
     public function submit(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
+            'type' => 'nullable|in:contact,registration',
             'name' => 'required|string|max:120',
             'email' => 'required|email|max:150',
             'phone' => 'nullable|string|max:30',
@@ -31,18 +34,49 @@ class ContactController extends Controller
         }
 
         $validated = $validator->validated();
+        $type = $validated['type'] ?? 'contact';
 
-        // Log inquiry for auditing and processing
-        Log::info('Public customer inquiry received', [
+        $inquiry = Inquiry::create([
+            'type' => $type,
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'company' => $validated['company'] ?? 'N/A',
+            'phone' => $validated['phone'] ?? null,
+            'company' => $validated['company'] ?? null,
             'subject' => $validated['subject'],
+            'message' => $validated['message'],
         ]);
 
+        $reference = 'INQ-'.str_pad((string) $inquiry->id, 6, '0', STR_PAD_LEFT);
+
+        try {
+            $body = implode("\n", [
+                'Reference: '.$reference,
+                'Type: '.$type,
+                'Name: '.$inquiry->name,
+                'Email: '.$inquiry->email,
+                'Phone: '.($inquiry->phone ?: '—'),
+                'Company: '.($inquiry->company ?: '—'),
+                'Subject: '.$inquiry->subject,
+                '',
+                $inquiry->message,
+            ]);
+            Mail::raw($body, function ($message) use ($inquiry, $reference, $type) {
+                $label = $type === 'registration' ? 'Customer registration' : 'Contact inquiry';
+                $message->to('dagicreative16@gmail.com')
+                    ->replyTo($inquiry->email, $inquiry->name)
+                    ->subject($label.' '.$reference.' — '.$inquiry->name);
+            });
+        } catch (\Throwable $e) {
+            Log::warning('Inquiry mail failed for '.$reference.': '.$e->getMessage());
+        }
+
+        $message = $type === 'registration'
+            ? 'Your company registration has been received. Our sales desk will contact you shortly.'
+            : 'Your inquiry has been received. An enterprise solutions engineer will respond within 24 business hours.';
+
         return $this->successResponse([
-            'reference_ticket' => 'INQ-' . strtoupper(bin2hex(random_bytes(4))),
-            'received_at' => now()->toIso8601String(),
-        ], 'Your inquiry has been received. An enterprise solutions engineer will respond within 24 business hours.');
+            'reference_ticket' => $reference,
+            'received_at' => $inquiry->created_at?->toIso8601String(),
+        ], $message);
     }
 }

@@ -10,6 +10,7 @@ Route::get('/brands', [ShowroomController::class, 'brands'])->name('showroom.bra
 Route::get('/product/{slug}', [ShowroomController::class, 'product'])->name('showroom.product');
 Route::get('/products/{slug}', fn (string $slug) => redirect("/product/{$slug}"));
 Route::get('/about', [ShowroomController::class, 'about'])->name('showroom.about');
+Route::get('/register', [ShowroomController::class, 'register'])->name('showroom.register');
 Route::get('/services', [ShowroomController::class, 'services'])->name('showroom.services');
 Route::get('/contact', [ShowroomController::class, 'contact'])->name('showroom.contact');
 Route::get('/privacy', [ShowroomController::class, 'privacy'])->name('showroom.privacy');

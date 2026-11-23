@@ -93,6 +93,7 @@
           <h2 class="mb-3 text-xs font-black uppercase tracking-wider text-white">Company</h2>
           <div class="space-y-2 text-xs">
             <Link href="/about" class="block hover:text-white">About</Link>
+            <Link href="/register" class="block hover:text-white">Register</Link>
             <Link href="/contact" class="block hover:text-white">Contact</Link>
             <Link href="/privacy" class="block hover:text-white">Privacy</Link>
             <Link href="/terms" class="block hover:text-white">Terms</Link>
@@ -129,6 +130,7 @@ const links = [
   { href: '/brands', label: 'Brands' },
   { href: '/services', label: 'Solutions' },
   { href: '/about', label: 'About' },
+  { href: '/register', label: 'Register' },
   { href: '/contact', label: 'Contact' },
 ];
 

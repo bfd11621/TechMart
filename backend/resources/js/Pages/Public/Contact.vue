@@ -1,10 +1,12 @@
 <template>
   <PublicLayout>
     <section class="mx-auto grid max-w-5xl gap-8 px-4 py-14 lg:grid-cols-2">
-      <div>
+      <div class="space-y-4">
         <h1 class="text-3xl font-black text-[#042562]">Contact technical sales</h1>
         <p class="mt-3 text-sm text-slate-600">{{ company.email }} · {{ company.phone }}</p>
         <p class="mt-2 text-sm text-slate-600">3rd Floor, Wastna Commercial Building, General Wingate St, Addis Ababa</p>
+        <p class="text-xs text-slate-500">Monday to Saturday, 8:30 AM – 6:00 PM EAT.</p>
+        <OfficeMap />
       </div>
       <form class="space-y-3 rounded-xl border border-slate-200 bg-white p-5" @submit.prevent="submit">
         <input v-model="form.name" required placeholder="Name" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
@@ -26,6 +28,7 @@
 import { computed, reactive, ref } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import PublicLayout from '@/Layouts/PublicLayout.vue';
+import OfficeMap from '@/Components/OfficeMap.vue';
 
 const company = computed(() => usePage().props.company || {});
 const sending = ref(false);

@@ -118,6 +118,38 @@
           </div>
         </div>
       </div>
+
+      <section id="registration" class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+        <div class="space-y-4">
+          <span class="text-xs font-bold tracking-widest text-[#E20913] uppercase">Customer registration</span>
+          <h2 class="text-2xl font-black text-[#042562]">Register your company</h2>
+          <p class="text-sm text-slate-600 leading-relaxed">
+            Procurement teams can register once. Sales will use the details for quotations, delivery, and account follow-up. This does not create a staff login.
+          </p>
+          <router-link to="/register" class="inline-flex text-xs font-bold text-[#1865C0]">Open the full registration page</router-link>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <CustomerRegistrationForm />
+        </div>
+      </section>
+
+      <section id="contact" class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+        <div class="space-y-4">
+          <span class="text-xs font-bold tracking-widest text-[#1865C0] uppercase">Visit the office</span>
+          <h2 class="text-2xl font-black text-[#042562]">Contact and location</h2>
+          <p class="text-sm text-slate-600 leading-relaxed">
+            3rd Floor, Wastna Commercial Building, General Wingate St, Addis Ababa.
+          </p>
+          <p class="text-sm text-slate-700">
+            <a href="tel:+251946428560" class="font-bold text-[#042562]">+251 94 642 8560</a>
+            <span class="mx-2 text-slate-300">·</span>
+            <a href="mailto:dagimw@iracktech.com" class="font-bold text-[#1865C0]">dagimw@iracktech.com</a>
+          </p>
+          <p class="text-xs text-slate-500">Monday to Saturday, 8:30 AM – 6:00 PM EAT.</p>
+          <router-link to="/contact" class="inline-flex text-xs font-bold uppercase tracking-wider text-[#042562]">Send a message</router-link>
+        </div>
+        <OfficeMap />
+      </section>
     </div>
   </PublicLayout>
 </template>
@@ -125,6 +157,8 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import PublicLayout from '@/layouts/PublicLayout.vue';
+import OfficeMap from '@/components/public/OfficeMap.vue';
+import CustomerRegistrationForm from '@/components/public/CustomerRegistrationForm.vue';
 import { configService } from '@/services/configService';
 import {
   ArrowRight,

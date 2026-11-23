@@ -37,6 +37,29 @@
       </div>
     </section>
 
+    <section class="border-b border-slate-200 bg-white">
+      <div class="mx-auto grid max-w-7xl gap-8 px-4 py-14 lg:grid-cols-3">
+        <div>
+          <div class="text-xs font-bold uppercase tracking-widest text-[#1865C0]">About</div>
+          <h2 class="mt-1 text-2xl font-black text-[#042562]">{{ company.name || 'iRACK IT Solution' }}</h2>
+          <p class="mt-2 text-sm text-slate-600">Datacenter hardware supply and integration from our Addis Ababa office.</p>
+          <Link href="/about" class="mt-3 inline-block text-xs font-bold text-[#042562]">Company profile</Link>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-[#F4F6FA] p-5">
+          <div class="text-xs font-bold uppercase tracking-widest text-[#E20913]">Registration</div>
+          <h2 class="mt-1 text-2xl font-black text-[#042562]">Register your company</h2>
+          <p class="mt-2 text-sm text-slate-600">Share procurement details so sales can prepare quotations.</p>
+          <Link href="/register" class="mt-3 inline-block rounded-lg bg-[#042562] px-4 py-2 text-xs font-bold uppercase text-white">Start registration</Link>
+        </div>
+        <div>
+          <div class="text-xs font-bold uppercase tracking-widest text-[#1865C0]">Contact</div>
+          <h2 class="mt-1 text-2xl font-black text-[#042562]">Office map</h2>
+          <p class="mt-2 text-sm text-slate-600">Wastna Commercial Building, General Wingate St, Addis Ababa.</p>
+          <div class="mt-3"><OfficeMap /></div>
+        </div>
+      </div>
+    </section>
+
     <section class="mx-auto max-w-7xl px-4 py-14">
       <div class="mb-8 flex items-end justify-between">
         <div>
@@ -71,9 +94,13 @@
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { Link, usePage } from '@inertiajs/vue3';
 import PublicLayout from '@/Layouts/PublicLayout.vue';
 import ProductCard from '@/Components/ProductCard.vue';
+import OfficeMap from '@/Components/OfficeMap.vue';
+
+const company = computed(() => usePage().props.company || {});
 
 defineProps({
   categories: { type: Array, default: () => [] },

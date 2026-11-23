@@ -608,9 +608,7 @@ export const catalogService = {
       const response = await apiClient.post('/public/contact', formData);
       return response.data;
     } catch (err) {
-      if (err.response?.data) {
-        return err.response.data;
-      }
+      if (err.response) throw err;
       return {
         success: true,
         message: 'Your inquiry has been received. An enterprise solutions engineer will contact you shortly.',

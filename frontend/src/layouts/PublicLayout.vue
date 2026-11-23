@@ -11,13 +11,13 @@
           <span class="hidden md:inline text-slate-600">|</span>
           <span class="hidden md:flex items-center gap-1.5 text-slate-300">
             <Building2 class="w-3.5 h-3.5 text-slate-400" />
-            <span>3 Regional Fulfillment Hubs (HQ, Downtown, Airport)</span>
+            <span>Addis Ababa office · General Wingate St</span>
           </span>
         </div>
         <div class="flex items-center space-x-4">
-          <a :href="`tel:${companyInfo.phone || '+15550192831'}`" class="hover:text-white flex items-center gap-1.5 transition-colors">
+          <a :href="`tel:${companyInfo.phone || '+251946428560'}`" class="hover:text-white flex items-center gap-1.5 transition-colors">
             <Phone class="w-3 h-3 text-[#E20913]" />
-            <span class="font-semibold">{{ companyInfo.phone || '+1 (555) 019-2831' }}</span>
+            <span class="font-semibold">{{ companyInfo.phone || '+251 94 642 8560' }}</span>
           </a>
           <span class="text-slate-600">•</span>
           <router-link to="/admin/login" class="text-slate-300 hover:text-white flex items-center gap-1 transition-colors">
@@ -99,6 +99,13 @@
               active-class="!text-[#042562] !border-[#E20913]"
             >
               About
+            </router-link>
+            <router-link
+              to="/register"
+              class="text-slate-700 hover:text-[#1865C0] transition-colors py-2 border-b-2 border-transparent"
+              active-class="!text-[#042562] !border-[#E20913]"
+            >
+              Register
             </router-link>
             <router-link
               to="/contact"
@@ -261,6 +268,15 @@
               <ArrowRight class="w-3.5 h-3.5 opacity-60" />
             </router-link>
             <router-link
+              to="/register"
+              @click="mobileMenuOpen = false"
+              class="flex items-center justify-between px-3.5 py-2.5 rounded-lg text-slate-200 hover:text-white hover:bg-white/10 transition-colors"
+              active-class="bg-[#1865C0] text-white"
+            >
+              <span>Register</span>
+              <ArrowRight class="w-3.5 h-3.5 opacity-60" />
+            </router-link>
+            <router-link
               to="/contact"
               @click="mobileMenuOpen = false"
               class="flex items-center justify-between px-3.5 py-2.5 rounded-lg text-slate-200 hover:text-white hover:bg-white/10 transition-colors"
@@ -382,6 +398,11 @@
                 </router-link>
               </li>
               <li>
+                <router-link to="/register" class="hover:text-white transition-colors">
+                  Register your company
+                </router-link>
+              </li>
+              <li>
                 <router-link to="/services" class="hover:text-white transition-colors">
                   Turnkey Deployment Services
                 </router-link>
@@ -421,12 +442,7 @@
                 <p class="text-[11px] text-blue-300">dagimw@iracktech.com • +251 94 642 8560</p>
               </div>
               <div>
-                <p class="font-bold text-white text-[11px]">Downtown Commercial Center</p>
-                <p class="text-slate-400 text-[11px]">Enterprise Tower, Financial District</p>
-              </div>
-              <div>
-                <p class="font-bold text-white text-[11px]">Airport Logistics Terminal</p>
-                <p class="text-slate-400 text-[11px]">Air Cargo Parkway, Logistics Bay 4</p>
+                <p class="text-slate-400 text-[11px]">Monday to Saturday, 8:30 AM – 6:00 PM EAT</p>
               </div>
             </div>
           </div>

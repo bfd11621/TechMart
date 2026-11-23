@@ -108,6 +108,11 @@ class ShowroomController extends Controller
         return Inertia::render('Public/Contact');
     }
 
+    public function register(): Response
+    {
+        return Inertia::render('Public/Register');
+    }
+
     public function privacy(): Response
     {
         return Inertia::render('Public/Privacy');

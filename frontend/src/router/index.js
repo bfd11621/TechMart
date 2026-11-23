@@ -52,6 +52,12 @@ const routes = [
     meta: { title: 'About iRACK IT Solution' },
   },
   {
+    path: '/register',
+    name: 'register',
+    component: () => import('@/views/public/RegisterView.vue'),
+    meta: { title: 'Register Your Company' },
+  },
+  {
     path: '/services',
     name: 'services',
     component: () => import('@/views/public/ServicesView.vue'),

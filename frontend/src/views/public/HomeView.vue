@@ -408,6 +408,33 @@
       </div>
     </section>
 
+    <section class="border-t border-slate-200 bg-white py-16">
+      <div class="mx-auto grid max-w-7xl gap-8 px-4 lg:grid-cols-3">
+        <div class="space-y-3">
+          <div class="text-xs font-bold uppercase tracking-widest text-[#1865C0]">About</div>
+          <h2 class="text-2xl font-black text-[#042562]">iRACK IT Solution</h2>
+          <p class="text-sm leading-relaxed text-slate-600">
+            We supply and integrate datacenter hardware from our office in Addis Ababa: servers, switching, storage, power, and cabinets.
+          </p>
+          <router-link to="/about" class="inline-flex text-xs font-bold uppercase tracking-wider text-[#042562]">Read the company profile</router-link>
+        </div>
+        <div class="space-y-3 rounded-2xl border border-slate-200 bg-[#F4F6FA] p-6">
+          <div class="text-xs font-bold uppercase tracking-widest text-[#E20913]">Registration</div>
+          <h2 class="text-2xl font-black text-[#042562]">Register your company</h2>
+          <p class="text-sm leading-relaxed text-slate-600">
+            Share your company and procurement needs so sales can prepare quotations and deliveries.
+          </p>
+          <router-link to="/register" class="inline-flex rounded-lg bg-[#042562] px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white">Start registration</router-link>
+        </div>
+        <div class="space-y-3">
+          <div class="text-xs font-bold uppercase tracking-widest text-[#1865C0]">Contact</div>
+          <h2 class="text-2xl font-black text-[#042562]">Office map</h2>
+          <p class="text-sm text-slate-600">3rd Floor, Wastna Commercial Building, General Wingate St, Addis Ababa.</p>
+          <OfficeMap />
+        </div>
+      </div>
+    </section>
+
     <!-- 8. Contact Consultation CTA Banner -->
     <section class="bg-[#042562] text-white py-16 border-t border-navy-800">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
@@ -449,6 +476,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import PublicLayout from '@/layouts/PublicLayout.vue';
+import OfficeMap from '@/components/public/OfficeMap.vue';
 import ProductCard from '@/components/catalog/ProductCard.vue';
 import QuickViewModal from '@/components/common/QuickViewModal.vue';
 import catalogService from '@/services/catalogService';
