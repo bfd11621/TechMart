@@ -8,7 +8,7 @@ class StockIssuingRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->hasPermission('inventory.create') ?? false;
+        return $this->user()?->hasPermission('inventory.issue') ?? false;
     }
 
     public function rules(): array

@@ -185,7 +185,7 @@ const form = reactive({
 const currentQuantity = computed(() => {
   if (!form.store_id || !form.product_id) return 0;
   const match = props.inventories.find(
-    (i) => i.store_id === form.store_id && i.product_id === form.product_id
+    (i) => Number(i.store_id) === Number(form.store_id) && Number(i.product_id) === Number(form.product_id)
   );
   return match ? match.quantity : 0;
 });
@@ -208,7 +208,7 @@ watch(
     if (open) {
       error.value = '';
       form.store_id = props.preselectedStoreId || (props.stores[0]?.id ?? null);
-      form.product_id = props.preselectedProductId || (props.products[0]?.id ?? null);
+      form.product_id = props.preselectedProductId || null;
       form.external_reference = '';
       reasonPreset.value = 'Physical Inventory Cycle Count Discrepancy';
       form.adjustment_reason = reasonPreset.value;

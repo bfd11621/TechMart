@@ -617,26 +617,32 @@ export const quotationService = {
    * Download branded PDF proposal document
    */
   async downloadPdf(id, quotationNumber) {
-    try {
-      const response = await apiClient.get(`/admin/quotations/${id}/pdf`, {
-        responseType: 'blob',
-      });
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.setAttribute('download', `iRACK_Quotation_${quotationNumber || id}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
-      return true;
-    } catch (error) {
-      if (error.response) throw error;
-      console.warn(`PDF download failed for quotation #${id}:`, error.message);
-      window.print();
-      return true;
+    const response = await apiClient.get(`/admin/quotations/${id}/pdf`, {
+      responseType: 'blob',
+    });
+    const type = response.data?.type || response.headers?.['content-type'] || '';
+    if (type.includes('json') || type.includes('text')) {
+      const text = await response.data.text();
+      let message = 'PDF export failed.';
+      try {
+        message = JSON.parse(text).message || message;
+      } catch {
+        message = text.slice(0, 180) || message;
+      }
+      const error = new Error(message);
+      error.response = { data: { message } };
+      throw error;
     }
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.setAttribute('download', `iRACK_Quotation_${quotationNumber || id}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
+    return true;
   },
 
   /**

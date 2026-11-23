@@ -143,8 +143,8 @@ class QuotationService
                 $rfq = RfqRequest::find($rfqId);
                 if ($rfq) {
                     $rfq->logStatusChange(
-                        RfqStatus::QUOTATION_PREPARED,
                         $user,
+                        RfqStatus::QUOTATION_PREPARED,
                         "Official proposal #{$quotationNumber} prepared."
                     );
                 }
@@ -269,24 +269,24 @@ class QuotationService
             // Also notify or sync RFQ if linked
             if ($quotation->rfqRequest) {
                 $quotation->rfqRequest->logStatusChange(
-                    RfqStatus::APPROVED,
                     $user,
+                    RfqStatus::APPROVED,
                     "Client officially approved quotation #{$quotation->quotation_number}."
                 );
             }
         } elseif ($statusEnum === QuotationStatus::SENT) {
             if ($quotation->rfqRequest) {
                 $quotation->rfqRequest->logStatusChange(
-                    RfqStatus::SENT_TO_CUSTOMER,
                     $user,
+                    RfqStatus::SENT_TO_CUSTOMER,
                     "Quotation #{$quotation->quotation_number} dispatched to client."
                 );
             }
         } elseif ($statusEnum === QuotationStatus::REJECTED) {
             if ($quotation->rfqRequest) {
                 $quotation->rfqRequest->logStatusChange(
-                    RfqStatus::REJECTED,
                     $user,
+                    RfqStatus::REJECTED,
                     "Client rejected quotation proposal."
                 );
             }
@@ -323,6 +323,8 @@ class QuotationService
             : "Quotation PDF emailed to {$recipient}.";
 
         try {
+            config(['mail.mailers.smtp.timeout' => 20]);
+            Mail::purge('smtp');
             Mail::to($recipient)->send(new QuotationSentMail(
                 $quotation,
                 $note !== '' ? $note : null,

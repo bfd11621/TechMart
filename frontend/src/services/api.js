@@ -30,13 +30,22 @@ apiClient.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
+  async (error) => {
     const notify = useNotificationStore();
     const auth = useAuthStore();
 
     if (!error.response) {
       notify.error('Network Error: Unable to reach the iRACK API service. Please verify your backend server.');
       return Promise.reject(error);
+    }
+
+    if (error.response.data instanceof Blob) {
+      try {
+        const text = await error.response.data.text();
+        error.response.data = text ? JSON.parse(text) : {};
+      } catch {
+        error.response.data = { message: 'The server returned an unreadable response.' };
+      }
     }
 
     const { status, data } = error.response;

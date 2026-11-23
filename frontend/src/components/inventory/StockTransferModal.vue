@@ -204,7 +204,7 @@ const originStoreName = computed(() => {
 const sourceAvailableStock = computed(() => {
   if (!form.source_store_id || !form.product_id) return 0;
   const match = props.inventories.find(
-    (i) => i.store_id === form.source_store_id && i.product_id === form.product_id
+    (i) => Number(i.store_id) === Number(form.source_store_id) && Number(i.product_id) === Number(form.product_id)
   );
   return match ? match.available_quantity : 0;
 });
@@ -218,7 +218,7 @@ watch(
       // Select different destination
       const otherStore = props.stores.find((s) => s.id !== form.source_store_id);
       form.destination_store_id = otherStore ? otherStore.id : null;
-      form.product_id = props.preselectedProductId || (props.products[0]?.id ?? null);
+      form.product_id = props.preselectedProductId || null;
       form.quantity = 1;
       form.transfer_reference = '';
       form.transfer_notes = '';

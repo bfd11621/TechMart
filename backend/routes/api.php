@@ -157,15 +157,15 @@ Route::prefix('v1')->group(function () {
             Route::get('/dashboard', [InventoryController::class, 'dashboard'])->middleware('check.permission:inventory.view');
             Route::get('/reports', [InventoryController::class, 'reports'])->middleware('check.permission:reports.view');
             Route::get('/{id}', [InventoryController::class, 'show'])->middleware('check.permission:inventory.view');
-            Route::patch('/{id}/alert', [InventoryController::class, 'updateAlert'])->middleware('check.permission:inventory.update');
+            Route::patch('/{id}/alert', [InventoryController::class, 'updateAlert'])->middleware('check.permission:inventory.adjust');
         });
 
         // Stock Movements (Receiving, Issuing, Transfers, Adjustments)
         Route::prefix('stock-movements')->group(function () {
             Route::get('/', [StockMovementController::class, 'index'])->middleware('check.permission:inventory.view');
             Route::get('/{id}', [StockMovementController::class, 'show'])->middleware('check.permission:inventory.view');
-            Route::post('/receive', [StockMovementController::class, 'receive'])->middleware('check.permission:inventory.create');
-            Route::post('/issue', [StockMovementController::class, 'issue'])->middleware('check.permission:inventory.create');
+            Route::post('/receive', [StockMovementController::class, 'receive'])->middleware('check.permission:inventory.receive');
+            Route::post('/issue', [StockMovementController::class, 'issue'])->middleware('check.permission:inventory.issue');
             Route::post('/transfer', [StockMovementController::class, 'transfer'])->middleware('check.permission:stock_transfers.create');
             Route::post('/adjust', [StockMovementController::class, 'adjust'])->middleware('check.permission:inventory.adjust');
         });

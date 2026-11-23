@@ -15,8 +15,8 @@
           <button type="button" class="px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-bold text-[#042562]" @click="exportCsv">
             Export CSV
           </button>
-          <button type="button" class="px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-bold text-[#042562] disabled:opacity-50" :disabled="!quotationId || exporting" @click="exportPdf">
-            Export PDF
+          <button type="button" class="px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-bold text-[#042562] disabled:opacity-50" :disabled="exporting" @click="exportPdf">
+            {{ exporting ? 'Exporting...' : 'Export PDF' }}
           </button>
           <button type="button" class="px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-bold text-[#042562]" @click="openGmail">
             Open in Gmail
@@ -24,7 +24,7 @@
           <button type="button" class="px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-bold text-[#042562]" @click="openOutlook">
             Open in Outlook
           </button>
-          <button type="button" class="px-3 py-2 rounded-lg bg-[#1865C0] text-white text-xs font-bold disabled:opacity-50" :disabled="!quotationId" @click="sendOpen = true">
+          <button type="button" class="px-3 py-2 rounded-lg bg-[#1865C0] text-white text-xs font-bold" @click="sendOpen = true">
             Send Quotation via Email
           </button>
           <button type="button" class="px-3 py-2 rounded-lg bg-[#042562] text-white text-xs font-bold disabled:opacity-50" :disabled="saving" @click="saveQuotation">
@@ -444,15 +444,16 @@ const saveQuotation = async () => {
 };
 
 const exportPdf = async () => {
-  if (!quotationId.value) {
-    notify.error('Save the quotation before exporting the PDF.');
-    return;
-  }
   exporting.value = true;
   try {
+    if (!quotationId.value) {
+      const saved = await saveQuotation();
+      if (!saved || !quotationId.value) return;
+    }
     await quotationService.downloadPdf(quotationId.value, form.quotation_number);
+    notify.success('Quotation PDF downloaded.');
   } catch (error) {
-    notify.error(error.response?.data?.message || 'PDF export failed.');
+    notify.error(error.response?.data?.message || error.message || 'PDF export failed.');
   } finally {
     exporting.value = false;
   }

@@ -198,8 +198,8 @@ class SalesOrderService
             // 7. If linked to customer RFQ, update RFQ status to CONVERTED_TO_ORDER
             if ($lockedQuotation->rfqRequest) {
                 $lockedQuotation->rfqRequest->logStatusChange(
-                    RfqStatus::CONVERTED_TO_ORDER,
                     $user,
+                    RfqStatus::CONVERTED_TO_ORDER,
                     "Quotation inquiry fulfilled into confirmed Sales Order #{$orderNumber}."
                 );
             }

@@ -55,13 +55,17 @@
         </div>
       </div>
 
+      <div v-if="loadError" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">
+        {{ loadError }}
+      </div>
+
       <!-- Executive Dashboard Metric Cards -->
       <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <!-- Total Products -->
         <div class="corporate-card p-4">
           <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Catalog Hardware</span>
           <div class="flex items-baseline justify-between mt-1">
-            <span class="text-2xl font-black text-[#042562]">{{ metrics.total_products || 5 }}</span>
+            <span class="text-2xl font-black text-[#042562]">{{ metrics.total_products }}</span>
             <span class="text-xs text-blue-600 font-semibold">Models</span>
           </div>
         </div>
@@ -70,7 +74,7 @@
         <div class="corporate-card p-4">
           <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Physical Units</span>
           <div class="flex items-baseline justify-between mt-1">
-            <span class="text-2xl font-black text-[#042562]">{{ metrics.total_stock_quantity || 113 }}</span>
+            <span class="text-2xl font-black text-[#042562]">{{ metrics.total_stock_quantity }}</span>
             <span class="text-xs text-slate-500 font-semibold">On-Hand</span>
           </div>
         </div>
@@ -80,9 +84,9 @@
           <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Stock Valuation (Cost)</span>
           <div class="flex items-baseline justify-between mt-1">
             <span class="text-xl sm:text-2xl font-black text-[#042562]">
-              ${{ formatCurrency(metrics.total_stock_value || 371250) }}
+              {{ money(metrics.total_stock_value) }}
             </span>
-            <span class="text-[11px] text-emerald-600 font-bold">USD</span>
+            <span class="text-[11px] text-emerald-600 font-bold">{{ settings.currencyCode }}</span>
           </div>
         </div>
 
@@ -90,7 +94,7 @@
         <div class="corporate-card p-4">
           <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Low Stock Alerts</span>
           <div class="flex items-baseline justify-between mt-1">
-            <span class="text-2xl font-black text-[#F59E0B]">{{ metrics.low_stock_count || 1 }}</span>
+            <span class="text-2xl font-black text-[#F59E0B]">{{ metrics.low_stock_count }}</span>
             <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700">Warning</span>
           </div>
         </div>
@@ -99,7 +103,7 @@
         <div class="corporate-card p-4 col-span-2 lg:col-span-1">
           <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Out of Stock</span>
           <div class="flex items-baseline justify-between mt-1">
-            <span class="text-2xl font-black text-[#DC2626]">{{ metrics.out_of_stock_count || 1 }}</span>
+            <span class="text-2xl font-black text-[#DC2626]">{{ metrics.out_of_stock_count }}</span>
             <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-red-700">Critical</span>
           </div>
         </div>
@@ -114,16 +118,17 @@
               Regional Distribution Hubs — Stock Balances & Valuation
             </h3>
           </div>
-          <span class="text-xs text-slate-400 font-medium">3 active fulfillment centers</span>
+          <span class="text-xs text-slate-400 font-medium">{{ stores.length }} fulfillment center{{ stores.length === 1 ? '' : 's' }}</span>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <p v-if="!metrics.store_distribution.length" class="text-xs text-slate-400">No stores are set up yet.</p>
+        <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div
             v-for="st in metrics.store_distribution"
             :key="st.store_id"
             @click="selectStoreFilter(st.store_id)"
             class="p-4 rounded-xl border transition-all cursor-pointer"
-            :class="selectedStoreId === st.store_id ? 'border-[#1865C0] bg-blue-50/50 shadow-sm' : 'border-slate-200 hover:border-slate-300 bg-white'"
+            :class="sameId(selectedStoreId, st.store_id) ? 'border-[#1865C0] bg-blue-50/50 shadow-sm' : 'border-slate-200 hover:border-slate-300 bg-white'"
           >
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-extrabold text-[#042562] truncate">{{ st.store_name }}</span>
@@ -140,7 +145,7 @@
             </div>
             <div class="flex items-baseline justify-between text-xs mt-1">
               <span class="text-slate-500">Valuation:</span>
-              <span class="font-bold text-slate-800">${{ formatCurrency(st.total_valuation) }}</span>
+              <span class="font-bold text-slate-800">{{ money(st.total_valuation) }}</span>
             </div>
 
             <!-- Visual Bar -->
@@ -148,7 +153,7 @@
               <div
                 class="h-full rounded-full transition-all duration-500"
                 :class="st.is_primary ? 'bg-[#042562]' : 'bg-[#1865C0]'"
-                :style="{ width: `${Math.min(100, (st.total_quantity / (metrics.total_stock_quantity || 1)) * 100)}%` }"
+                :style="{ width: `${Math.min(100, (st.total_quantity / (networkQuantity || 1)) * 100)}%` }"
               ></div>
             </div>
           </div>
@@ -157,7 +162,7 @@
 
       <!-- Navigation Views: Master Inventory vs. Movements Audit vs. Reports -->
       <div class="flex items-center justify-between border-b border-slate-200">
-        <div class="flex items-center gap-6">
+        <div class="flex items-center gap-6 overflow-x-auto">
           <button
             @click="activeTab = 'inventory'"
             class="py-3 text-xs font-extrabold uppercase tracking-wider transition-colors relative"
@@ -212,7 +217,6 @@
               <input
                 type="text"
                 v-model="searchQuery"
-                @input="handleSearchDebounced"
                 placeholder="Search product model, SKU, or shelf location..."
                 class="w-full text-xs rounded-lg pl-9 pr-4 py-2.5 border border-slate-300 focus:border-[#1865C0] focus:ring-1 focus:ring-[#1865C0] bg-white"
               />
@@ -222,7 +226,7 @@
             <div>
               <select
                 v-model="selectedStoreId"
-                @change="loadInventory"
+                @change="loadDashboard"
                 class="w-full text-xs font-medium rounded-lg border border-slate-300 px-3 py-2.5 focus:border-[#1865C0] focus:ring-1 focus:ring-[#1865C0] bg-white text-slate-800"
               >
                 <option :value="null">All Regional Hubs (HQ Consolidated)</option>
@@ -236,7 +240,6 @@
             <div>
               <select
                 v-model="statusFilter"
-                @change="loadInventory"
                 class="w-full text-xs font-medium rounded-lg border border-slate-300 px-3 py-2.5 focus:border-[#1865C0] focus:ring-1 focus:ring-[#1865C0] bg-white text-slate-800"
               >
                 <option value="">All Stock Statuses</option>
@@ -274,10 +277,14 @@
                   <td class="py-3 px-4">
                     <div class="flex items-center gap-3">
                       <img
-                        :src="item.primary_image_url || 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=100&auto=format&fit=crop&q=80'"
+                        v-if="item.primary_image_url"
+                        :src="item.primary_image_url"
                         :alt="item.product_name"
                         class="w-10 h-10 rounded-lg object-cover border border-slate-200 flex-shrink-0"
                       />
+                      <div v-else class="w-10 h-10 rounded-lg bg-[#042562] text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">
+                        {{ initials(item.product_name) }}
+                      </div>
                       <div class="min-w-0">
                         <span class="font-extrabold text-[#042562] block truncate max-w-xs sm:max-w-md">
                           {{ item.product_name }}
@@ -333,7 +340,7 @@
 
                   <!-- Valuation -->
                   <td class="py-3 px-4 text-right font-mono font-bold text-slate-800">
-                    ${{ formatCurrency(item.stock_valuation) }}
+                    {{ money(item.stock_valuation) }}
                   </td>
 
                   <!-- Last Movement Date & Aging -->
@@ -375,10 +382,16 @@
                 </tr>
 
                 <!-- Empty State -->
-                <tr v-if="filteredInventories.length === 0">
+                <tr v-if="loading && inventories.length === 0">
+                  <td colspan="8" class="text-center py-12 text-slate-400">
+                    <p class="font-bold">Loading store inventory...</p>
+                  </td>
+                </tr>
+                <tr v-else-if="filteredInventories.length === 0">
                   <td colspan="8" class="text-center py-12 text-slate-400">
                     <Boxes class="w-8 h-8 mx-auto mb-2 opacity-40" />
-                    <p class="font-bold">No inventory records matching active filters.</p>
+                    <p class="font-bold">No inventory records matching these filters.</p>
+                    <p class="text-[11px] mt-1">Receive stock to create the first balance for a product at a store.</p>
                   </td>
                 </tr>
               </tbody>
@@ -394,7 +407,6 @@
             <div class="flex items-center gap-3 w-full sm:w-auto">
               <select
                 v-model="movementTypeFilter"
-                @change="loadMovements"
                 class="text-xs font-medium rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-800"
               >
                 <option value="">All Movement Types</option>
@@ -402,11 +414,13 @@
                 <option value="ISSUE">Stock Issuing (Outward)</option>
                 <option value="TRANSFER_OUT">Inter-Store Transfers</option>
                 <option value="ADJUSTMENT">Audit Adjustments</option>
+                <option value="SALE_DEDUCTION">Sales Order Deductions</option>
+                <option value="RETURN">Return Restocks</option>
               </select>
 
               <select
                 v-model="selectedStoreId"
-                @change="loadMovements"
+                @change="loadDashboard"
                 class="text-xs font-medium rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-800"
               >
                 <option :value="null">All Hub Locations</option>
@@ -417,7 +431,7 @@
             </div>
 
             <span class="text-xs text-slate-500 font-medium">
-              Showing {{ movements.length }} logged transactions
+              Showing {{ filteredMovements.length }} logged transactions
             </span>
           </div>
         </div>
@@ -438,7 +452,13 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 text-xs">
-                <tr v-for="mov in movements" :key="mov.id" class="hover:bg-slate-50/50">
+                <tr v-if="filteredMovements.length === 0">
+                  <td colspan="8" class="text-center py-12 text-slate-400">
+                    <History class="w-8 h-8 mx-auto mb-2 opacity-40" />
+                    <p class="font-bold">No stock movements for this filter.</p>
+                  </td>
+                </tr>
+                <tr v-for="mov in filteredMovements" :key="mov.id" class="hover:bg-slate-50/50">
                   <td class="py-3 px-4 font-mono font-bold text-[#042562]">
                     {{ mov.movement_number }}
                   </td>
@@ -509,25 +529,29 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div class="corporate-card p-4 border-l-4 border-l-emerald-500">
             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">0 - 30 Days</span>
-            <span class="text-xl font-black text-emerald-700 block mt-1">Fast Moving Stock</span>
+            <span class="text-2xl font-black text-emerald-700 block mt-1">{{ aging.fast }}</span>
+            <span class="text-xs font-bold text-emerald-800 block">Fast moving units</span>
             <span class="text-xs text-slate-500 mt-1 block">Active showroom inventory with recent sales / transfer velocity.</span>
           </div>
 
           <div class="corporate-card p-4 border-l-4 border-l-blue-500">
             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">31 - 60 Days</span>
-            <span class="text-xl font-black text-blue-700 block mt-1">Normal Moving</span>
+            <span class="text-2xl font-black text-blue-700 block mt-1">{{ aging.normal }}</span>
+            <span class="text-xs font-bold text-blue-800 block">Normal moving units</span>
             <span class="text-xs text-slate-500 mt-1 block">Healthy turnover cycle for enterprise compute & switches.</span>
           </div>
 
           <div class="corporate-card p-4 border-l-4 border-l-amber-500">
             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">61 - 90 Days</span>
-            <span class="text-xl font-black text-amber-700 block mt-1">Slow Moving Stock</span>
+            <span class="text-2xl font-black text-amber-700 block mt-1">{{ aging.slow }}</span>
+            <span class="text-xs font-bold text-amber-800 block">Slow moving units</span>
             <span class="text-xs text-slate-500 mt-1 block">Recommend highlighting in customer quotation proposals.</span>
           </div>
 
           <div class="corporate-card p-4 border-l-4 border-l-red-500">
             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">90+ Days</span>
-            <span class="text-xl font-black text-red-700 block mt-1">Stagnant Stock</span>
+            <span class="text-2xl font-black text-red-700 block mt-1">{{ aging.stagnant }}</span>
+            <span class="text-xs font-bold text-red-800 block">Stagnant units</span>
             <span class="text-xs text-slate-500 mt-1 block">Zero movement logged in 3 months; review storage footprint.</span>
           </div>
         </div>
@@ -566,8 +590,8 @@
                   <td class="p-3 font-sans font-semibold text-slate-800">{{ item.product_name }}</td>
                   <td class="p-3 font-sans text-slate-600">{{ item.store_code }}</td>
                   <td class="p-3 text-right font-black">{{ item.quantity }}</td>
-                  <td class="p-3 text-right text-slate-600">${{ formatCurrency(item.cost_price) }}</td>
-                  <td class="p-3 text-right font-black text-[#042562]">${{ formatCurrency(item.stock_valuation) }}</td>
+                  <td class="p-3 text-right text-slate-600">{{ money(item.cost_price) }}</td>
+                  <td class="p-3 text-right font-black text-[#042562]">{{ money(item.stock_valuation) }}</td>
                   <td class="p-3 font-sans">
                     <span
                       class="px-2 py-0.5 rounded text-[10px] font-bold"
@@ -644,20 +668,25 @@
         <!-- Product Snapshot -->
         <div class="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border">
           <img
-            :src="selectedItem?.primary_image_url || 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=120&auto=format&fit=crop&q=80'"
+            v-if="selectedItem?.primary_image_url"
+            :src="selectedItem.primary_image_url"
             class="w-16 h-16 rounded-lg object-cover border"
+            :alt="selectedItem.product_name"
           />
+          <div v-else class="w-16 h-16 rounded-lg bg-[#042562] text-white font-black flex items-center justify-center">
+            {{ initials(selectedItem?.product_name) }}
+          </div>
           <div>
             <span class="font-mono text-xs font-bold text-[#1865C0]">{{ selectedItem?.sku }}</span>
-            <p class="text-xs text-slate-600 font-medium">Model: {{ selectedItem?.model_number }}</p>
-            <p class="text-xs text-slate-600 font-medium">OEM Cost: ${{ formatCurrency(selectedItem?.cost_price) }}</p>
+            <p class="text-xs text-slate-600 font-medium">Model: {{ selectedItem?.model_number || 'Not set' }}</p>
+            <p class="text-xs text-slate-600 font-medium">Unit cost: {{ money(selectedItem?.cost_price) }}</p>
           </div>
         </div>
 
         <!-- Store Distribution Breakdown Table for this Product -->
         <div>
           <h4 class="text-xs font-bold uppercase tracking-wider text-[#042562] mb-3">
-            Stock Distribution Across All 3 Branches
+            Stock at each store
           </h4>
           <div class="border rounded-xl overflow-hidden text-xs">
             <table class="w-full text-left">
@@ -721,6 +750,9 @@
 import { computed, onMounted, ref } from 'vue';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import inventoryService from '@/services/inventoryService';
+import storeService from '@/services/storeService';
+import { adminProductService } from '@/services/adminProductService';
+import { useSettingsStore } from '@/stores/settingsStore';
 import StockReceivingModal from '@/components/inventory/StockReceivingModal.vue';
 import StockIssuingModal from '@/components/inventory/StockIssuingModal.vue';
 import StockTransferModal from '@/components/inventory/StockTransferModal.vue';
@@ -741,34 +773,25 @@ import {
   X,
 } from 'lucide-vue-next';
 
+const settings = useSettingsStore();
 const activeTab = ref('inventory');
 const loading = ref(false);
+const loadError = ref('');
 
 const inventories = ref([]);
 const movements = ref([]);
 const metrics = ref({
-  total_products: 5,
-  total_stock_quantity: 113,
-  total_stock_value: 371250,
-  in_stock_count: 6,
-  low_stock_count: 1,
-  out_of_stock_count: 1,
+  total_products: 0,
+  total_stock_quantity: 0,
+  total_stock_value: 0,
+  in_stock_count: 0,
+  low_stock_count: 0,
+  out_of_stock_count: 0,
   store_distribution: [],
 });
 
-const stores = ref([
-  { id: 1, name: 'iRACK Central Distribution Hub (HQ)', code: 'ST-HQ-01', is_primary: true },
-  { id: 2, name: 'iRACK Commercial Sales Center', code: 'ST-DOWNTOWN-02', is_primary: false },
-  { id: 3, name: 'iRACK North Regional Depot', code: 'ST-NORTH-03', is_primary: false },
-]);
-
-const products = ref([
-  { id: 1, name: 'Dell PowerEdge R760 2U Enterprise Server', sku: 'DEL-PE-R760-01', cost_price: 4150.00, brand_name: 'Dell Technologies' },
-  { id: 2, name: 'Cisco Catalyst 9300 48-Port PoE+ Layer 3 Switch', sku: 'CSC-C9300-48P', cost_price: 2800.00, brand_name: 'Cisco Systems' },
-  { id: 3, name: 'Synology FlashStation FS3410 24-Bay All-Flash NAS', sku: 'SYN-FS-3410-01', cost_price: 4900.00, brand_name: 'Synology Inc.' },
-  { id: 4, name: 'APC Smart-UPS On-Line 10kVA 208V/230V Double Conversion', sku: 'APC-SRT-10KXLI', cost_price: 3650.00, brand_name: 'APC by Schneider' },
-  { id: 5, name: 'iRACK NetShelter Enterprise 42U Server Cabinet Rack', sku: 'IRK-NET-42U812', cost_price: 1350.00, brand_name: 'iRACK Custom' },
-]);
+const stores = ref([]);
+const products = ref([]);
 
 const searchQuery = ref('');
 const selectedStoreId = ref(null);
@@ -786,46 +809,95 @@ const modalStoreId = ref(null);
 const modalProductId = ref(null);
 const selectedItem = ref(null);
 
+const activeStoreId = computed(() => {
+  const value = selectedStoreId.value;
+  if (value === null || value === '' || value === 'null') return null;
+  const id = Number(value);
+  return Number.isFinite(id) ? id : null;
+});
+
+const sameId = (left, right) => Number(left) === Number(right);
+
 const filteredInventories = computed(() => {
   let list = [...inventories.value];
 
-  if (selectedStoreId.value) {
-    list = list.filter((i) => i.store_id === selectedStoreId.value);
+  if (activeStoreId.value) {
+    list = list.filter((item) => sameId(item.store_id, activeStoreId.value));
   }
 
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase();
     list = list.filter(
-      (i) =>
-        i.product_name.toLowerCase().includes(q) ||
-        i.sku.toLowerCase().includes(q) ||
-        (i.shelf_location && i.shelf_location.toLowerCase().includes(q))
+      (item) =>
+        String(item.product_name || '').toLowerCase().includes(q) ||
+        String(item.sku || '').toLowerCase().includes(q) ||
+        String(item.shelf_location || '').toLowerCase().includes(q)
     );
   }
 
   if (statusFilter.value) {
-    list = list.filter((i) => i.stock_status.toLowerCase() === statusFilter.value.toLowerCase());
+    list = list.filter((item) => String(item.stock_status || '').toLowerCase() === statusFilter.value.toLowerCase());
   }
 
   return list;
 });
 
-const formatCurrency = (val) => {
-  if (val === null || val === undefined) return '0.00';
-  return Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const filteredMovements = computed(() => {
+  let list = [...movements.value];
+  if (movementTypeFilter.value) {
+    list = list.filter((movement) => movement.type === movementTypeFilter.value);
+  }
+  if (activeStoreId.value) {
+    list = list.filter((movement) =>
+      sameId(movement.source_store?.id, activeStoreId.value) || sameId(movement.destination_store?.id, activeStoreId.value)
+    );
+  }
+  return list;
+});
+
+const aging = computed(() => {
+  const buckets = { fast: 0, normal: 0, slow: 0, stagnant: 0 };
+  filteredInventories.value.forEach((item) => {
+    const days = Number(item.aging_days) || 0;
+    const quantity = Number(item.quantity) || 0;
+    if (days <= 30) buckets.fast += quantity;
+    else if (days <= 60) buckets.normal += quantity;
+    else if (days <= 90) buckets.slow += quantity;
+    else buckets.stagnant += quantity;
+  });
+  return buckets;
+});
+
+const networkQuantity = computed(() =>
+  (metrics.value.store_distribution || []).reduce((sum, store) => sum + Number(store.total_quantity || 0), 0)
+);
+
+const money = (value) => settings.formatCurrency(value);
+const initials = (name) => String(name || 'IR').split(' ').slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+
+const unwrapList = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.data?.data)) return payload.data.data;
+  return [];
+};
+
+const collectPages = async (fetcher, params = {}) => {
+  const collected = [];
+  let page = 1;
+  let lastPage = 1;
+  do {
+    const response = await fetcher({ ...params, per_page: 100, page });
+    collected.push(...unwrapList(response));
+    lastPage = Number(response?.meta?.pagination?.last_page || 1);
+    page += 1;
+  } while (page <= lastPage && page <= 20);
+  return collected;
 };
 
 const selectStoreFilter = (storeId) => {
-  if (selectedStoreId.value === storeId) {
-    selectedStoreId.value = null;
-  } else {
-    selectedStoreId.value = storeId;
-  }
-  loadInventory();
-};
-
-const handleSearchDebounced = () => {
-  // client-side filtering handles search reactively
+  selectedStoreId.value = sameId(selectedStoreId.value, storeId) ? null : storeId;
+  loadDashboard();
 };
 
 const openReceivingModal = (item = null) => {
@@ -860,7 +932,7 @@ const openDetailDrawer = (item) => {
 const getProductStockForStore = (storeId) => {
   if (!selectedItem.value) return null;
   return inventories.value.find(
-    (i) => i.store_id === storeId && i.product_id === selectedItem.value.product_id
+    (item) => sameId(item.store_id, storeId) && sameId(item.product_id, selectedItem.value.product_id)
   );
 };
 
@@ -870,45 +942,72 @@ const printReport = () => {
 
 const loadData = async () => {
   loading.value = true;
-  await Promise.all([loadInventory(), loadDashboard(), loadMovements()]);
+  loadError.value = '';
+  const tasks = [
+    ['Stores', loadStores],
+    ['Products', loadProducts],
+    ['Inventory', loadInventory],
+    ['Dashboard', loadDashboard],
+    ['Movements', loadMovements],
+  ];
+  const failures = [];
+  await Promise.all(tasks.map(async ([label, task]) => {
+    try {
+      await task();
+    } catch (error) {
+      failures.push(error.response?.data?.message || `${label} could not be loaded.`);
+    }
+  }));
+  loadError.value = failures[0] || '';
   loading.value = false;
 };
 
 const loadInventory = async () => {
-  try {
-    const params = {};
-    if (selectedStoreId.value) params.store_id = selectedStoreId.value;
-    if (statusFilter.value) params.status = statusFilter.value;
-
-    const res = await inventoryService.getInventory(params);
-    inventories.value = res.data || [];
-  } catch (err) {
-    console.error('Failed to load inventory:', err);
-  }
+  inventories.value = await collectPages((params) => inventoryService.getInventory(params));
 };
 
 const loadDashboard = async () => {
-  try {
-    const res = await inventoryService.getDashboard(selectedStoreId.value);
-    if (res.data) {
-      metrics.value = res.data;
-    }
-  } catch (err) {
-    console.error('Failed to load inventory dashboard:', err);
+  const res = await inventoryService.getDashboard(activeStoreId.value);
+  const data = res?.data?.total_products !== undefined ? res.data : res?.data?.data;
+  if (data) {
+    metrics.value = {
+      ...metrics.value,
+      ...data,
+      store_distribution: Array.isArray(data.store_distribution) ? data.store_distribution : [],
+    };
   }
 };
 
 const loadMovements = async () => {
-  try {
-    const params = {};
-    if (movementTypeFilter.value) params.type = movementTypeFilter.value;
-    if (selectedStoreId.value) params.store_id = selectedStoreId.value;
+  const rows = await collectPages((params) => inventoryService.getMovements(params));
+  movements.value = rows.map((movement) => ({
+    ...movement,
+    items: Array.isArray(movement.items) ? movement.items : (movement.items?.data || []),
+  }));
+};
 
-    const res = await inventoryService.getMovements(params);
-    movements.value = res.data || [];
-  } catch (err) {
-    console.error('Failed to load movements:', err);
-  }
+const loadStores = async () => {
+  const response = await storeService.getStores();
+  stores.value = unwrapList(response).map((store) => ({
+    id: store.id,
+    name: store.name,
+    code: store.code,
+    is_primary: Boolean(store.is_primary),
+  }));
+};
+
+const loadProducts = async () => {
+  const rows = await collectPages((params) => adminProductService.getProducts(params));
+  products.value = rows
+    .filter((product) => product?.id && product?.name)
+    .map((product) => ({
+      id: product.id,
+      name: product.name,
+      sku: product.sku,
+      cost_price: Number(product.cost_price) || 0,
+      brand_name: product.brand?.name || product.brand_name || '',
+    }))
+    .sort((left, right) => String(left.name).localeCompare(String(right.name)));
 };
 
 onMounted(() => {

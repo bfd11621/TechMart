@@ -59,7 +59,7 @@
 
         <div>
           <label class="block text-xs font-bold uppercase tracking-wider text-[#042562] mb-1">
-            Unit Cost ($ USD)
+            Unit Cost ({{ settings.currencyCode }})
           </label>
           <input
             type="number"
@@ -156,6 +156,7 @@ import { reactive, ref, watch } from 'vue';
 import BaseModal from '@/components/common/BaseModal.vue';
 import inventoryService from '@/services/inventoryService';
 import { useNotificationStore } from '@/stores/notificationStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { ArrowDownToLine } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -180,6 +181,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'received']);
 const notify = useNotificationStore();
+const settings = useSettingsStore();
 
 const loading = ref(false);
 const error = ref('');
@@ -201,14 +203,14 @@ watch(
     if (open) {
       error.value = '';
       form.destination_store_id = props.preselectedStoreId || (props.stores[0]?.id ?? null);
-      form.product_id = props.preselectedProductId || (props.products[0]?.id ?? null);
+      form.product_id = props.preselectedProductId || null;
       form.quantity = 1;
       form.supplier = '';
       form.purchase_reference = '';
       form.remarks = '';
 
       if (form.product_id) {
-        const prod = props.products.find((p) => p.id === form.product_id);
+        const prod = props.products.find((p) => Number(p.id) === Number(form.product_id));
         if (prod) form.unit_cost = prod.cost_price;
       }
     }
@@ -219,7 +221,7 @@ watch(
   () => form.product_id,
   (newId) => {
     if (newId) {
-      const prod = props.products.find((p) => p.id === newId);
+      const prod = props.products.find((p) => Number(p.id) === Number(newId));
       if (prod && prod.cost_price) {
         form.unit_cost = prod.cost_price;
       }

@@ -11,8 +11,8 @@ use App\Http\Requests\Admin\UpdateQuotationStatusRequest;
 use App\Http\Resources\QuotationResource;
 use App\Models\Quotation;
 use App\Services\QuotationService;
-use Exception;
 use Illuminate\Http\JsonResponse;
+use Throwable;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -128,7 +128,7 @@ class QuotationController extends Controller
                 'message' => "Quotation #{$quotation->quotation_number} generated successfully.",
                 'data' => new QuotationResource($quotation),
             ], Response::HTTP_CREATED);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage(),
@@ -153,7 +153,7 @@ class QuotationController extends Controller
                 'message' => "Quotation #{$updated->quotation_number} updated successfully.",
                 'data' => new QuotationResource($updated),
             ]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage(),
@@ -179,7 +179,7 @@ class QuotationController extends Controller
                 'message' => "Quotation status advanced to {$updated->status->label()}.",
                 'data' => new QuotationResource($updated),
             ]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage(),
@@ -222,7 +222,7 @@ class QuotationController extends Controller
                 'message' => "Quotation {$updated->quotation_number} emailed to {$recipient}.",
                 'data' => new QuotationResource($updated),
             ]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage(),

@@ -8,7 +8,7 @@ class StockReceivingRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->hasPermission('inventory.create') ?? false;
+        return $this->user()?->hasPermission('inventory.receive') ?? false;
     }
 
     public function rules(): array

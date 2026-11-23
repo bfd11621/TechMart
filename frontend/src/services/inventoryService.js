@@ -380,438 +380,86 @@ export const inventoryService = {
    * Fetch Store Inventory records with faceted filters and pagination
    */
   async getInventory(params = {}) {
-    try {
-      const response = await apiClient.get('/admin/inventory', { params });
-      if (response.data?.data) {
-        return response.data;
-      }
-    } catch {
-      // Fallback to rich mock data
-    }
-
-    let filtered = [...MOCK_INVENTORIES];
-
-    if (params.store_id) {
-      filtered = filtered.filter((i) => i.store_id === Number(params.store_id));
-    }
-
-    if (params.search) {
-      const q = params.search.toLowerCase();
-      filtered = filtered.filter(
-        (i) =>
-          i.product_name.toLowerCase().includes(q) ||
-          i.sku.toLowerCase().includes(q) ||
-          (i.model_number && i.model_number.toLowerCase().includes(q)) ||
-          (i.shelf_location && i.shelf_location.toLowerCase().includes(q))
-      );
-    }
-
-    if (params.status) {
-      const st = params.status.toLowerCase();
-      if (st === 'out_of_stock') {
-        filtered = filtered.filter((i) => i.quantity <= 0);
-      } else if (st === 'low_stock') {
-        filtered = filtered.filter((i) => i.quantity > 0 && i.quantity <= i.min_alert_quantity);
-      } else if (st === 'in_stock') {
-        filtered = filtered.filter((i) => i.quantity > i.min_alert_quantity);
-      }
-    }
-
-    if (params.category_id) {
-      // simulate category filter
-    }
-
-    return {
-      success: true,
-      data: filtered,
-      meta: {
-        pagination: {
-          current_page: 1,
-          per_page: 15,
-          total: filtered.length,
-          last_page: 1,
-        },
-      },
-    };
+    const response = await apiClient.get('/admin/inventory', { params });
+    return response.data;
   },
 
   /**
    * Fetch single inventory record details
    */
   async getInventoryItem(id) {
-    try {
-      const response = await apiClient.get(`/admin/inventory/${id}`);
-      if (response.data?.data) {
-        return response.data;
-      }
-    } catch {
-      // Fallback
-    }
-
-    const found = MOCK_INVENTORIES.find((i) => String(i.id) === String(id));
-    if (found) {
-      return { success: true, data: found };
-    }
-    throw new Error('Inventory item not found.');
+    const response = await apiClient.get(`/admin/inventory/${id}`);
+    return response.data;
   },
 
   /**
    * Update minimum stock threshold & shelf location
    */
   async updateAlert(id, payload) {
-    try {
-      const response = await apiClient.patch(`/admin/inventory/${id}/alert`, payload);
-      return response.data;
-    } catch {
-      const item = MOCK_INVENTORIES.find((i) => String(i.id) === String(id));
-      if (item) {
-        item.min_alert_quantity = Number(payload.min_alert_quantity);
-        if (payload.shelf_location !== undefined) {
-          item.shelf_location = payload.shelf_location;
-        }
-        return { success: true, message: 'Stock threshold updated.', data: item };
-      }
-      throw new Error('Failed to update inventory threshold.');
-    }
+    const response = await apiClient.patch(`/admin/inventory/${id}/alert`, payload);
+    return response.data;
   },
 
   /**
    * Fetch Inventory Dashboard Metrics
    */
   async getDashboard(storeId = null) {
-    try {
-      const response = await apiClient.get('/admin/inventory/dashboard', {
-        params: storeId ? { store_id: storeId } : {},
-      });
-      if (response.data?.data) {
-        return response.data;
-      }
-    } catch {
-      // Fallback
-    }
-
-    let items = [...MOCK_INVENTORIES];
-    if (storeId) {
-      items = items.filter((i) => i.store_id === Number(storeId));
-    }
-
-    const totalQty = items.reduce((sum, i) => sum + i.quantity, 0);
-    const totalVal = items.reduce((sum, i) => sum + i.stock_valuation, 0);
-    const lowCount = items.filter((i) => i.quantity > 0 && i.quantity <= i.min_alert_quantity).length;
-    const outCount = items.filter((i) => i.quantity <= 0).length;
-    const inCount = items.filter((i) => i.quantity > i.min_alert_quantity).length;
-
-    return {
-      success: true,
-      data: {
-        total_products: 5,
-        total_stock_quantity: totalQty,
-        total_stock_value: Math.round(totalVal),
-        in_stock_count: inCount,
-        low_stock_count: lowCount,
-        out_of_stock_count: outCount,
-        store_distribution: [
-          {
-            store_id: 1,
-            store_name: 'iRACK Central Distribution Hub (HQ)',
-            store_code: 'ST-HQ-01',
-            is_primary: true,
-            total_quantity: 99,
-            total_valuation: 313150.00,
-            low_stock_count: 0,
-            out_of_stock_count: 0,
-          },
-          {
-            store_id: 2,
-            store_name: 'iRACK Commercial Sales Center',
-            store_code: 'ST-DOWNTOWN-02',
-            is_primary: false,
-            total_quantity: 6,
-            total_valuation: 24900.00,
-            low_stock_count: 1,
-            out_of_stock_count: 1,
-          },
-          {
-            store_id: 3,
-            store_name: 'iRACK North Regional Depot',
-            store_code: 'ST-NORTH-03',
-            is_primary: false,
-            total_quantity: 8,
-            total_valuation: 33200.00,
-            low_stock_count: 0,
-            out_of_stock_count: 0,
-          },
-        ],
-        recent_movements: MOCK_MOVEMENTS,
-      },
-    };
+    const response = await apiClient.get('/admin/inventory/dashboard', {
+      params: storeId ? { store_id: storeId } : {},
+    });
+    return response.data;
   },
 
   /**
    * Fetch Stock Movement transactions
    */
   async getMovements(params = {}) {
-    try {
-      const response = await apiClient.get('/admin/stock-movements', { params });
-      if (response.data?.data) {
-        return response.data;
-      }
-    } catch {
-      // Fallback
-    }
-
-    let filtered = [...MOCK_MOVEMENTS];
-
-    if (params.type) {
-      filtered = filtered.filter((m) => m.type === params.type.toUpperCase());
-    }
-
-    if (params.store_id) {
-      filtered = filtered.filter(
-        (m) =>
-          m.source_store?.id === Number(params.store_id) ||
-          m.destination_store?.id === Number(params.store_id)
-      );
-    }
-
-    if (params.search) {
-      const q = params.search.toLowerCase();
-      filtered = filtered.filter(
-        (m) =>
-          m.movement_number.toLowerCase().includes(q) ||
-          (m.supplier && m.supplier.toLowerCase().includes(q)) ||
-          (m.external_reference && m.external_reference.toLowerCase().includes(q)) ||
-          (m.reason && m.reason.toLowerCase().includes(q))
-      );
-    }
-
-    return {
-      success: true,
-      data: filtered,
-      meta: {
-        pagination: {
-          current_page: 1,
-          per_page: 15,
-          total: filtered.length,
-          last_page: 1,
-        },
-      },
-    };
+    const response = await apiClient.get('/admin/stock-movements', { params });
+    return response.data;
   },
 
   /**
    * Stock Receiving: Record received goods from supplier
    */
   async receiveStock(payload) {
-    try {
-      const response = await apiClient.post('/admin/stock-movements/receive', payload);
-      return response.data;
-    } catch (err) {
-      if (err.response?.data?.errors || err.response?.data?.message) {
-        throw err;
-      }
-      // Demo fallback mutation
-      const year = new Date().getFullYear();
-      const mockRef = `RCV-${year}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-
-      // Update local item
-      const item = MOCK_INVENTORIES.find(
-        (i) => i.store_id === Number(payload.destination_store_id) && i.product_id === Number(payload.product_id)
-      );
-      if (item) {
-        item.quantity += Number(payload.quantity);
-        item.available_quantity += Number(payload.quantity);
-        item.stock_valuation = item.quantity * item.cost_price;
-        item.last_movement_at = new Date().toISOString();
-      }
-
-      return {
-        success: true,
-        message: `Stock successfully received. Reference: ${mockRef}`,
-        data: {
-          movement_number: mockRef,
-          type: 'RECEIVE',
-          quantity: payload.quantity,
-        },
-      };
-    }
+    const response = await apiClient.post('/admin/stock-movements/receive', payload);
+    return response.data;
   },
 
   /**
    * Stock Issuing: Issue products from store with negative stock prevention
    */
   async issueStock(payload) {
-    try {
-      const response = await apiClient.post('/admin/stock-movements/issue', payload);
-      return response.data;
-    } catch (err) {
-      if (err.response?.data?.errors || err.response?.data?.message) {
-        throw err;
-      }
-      // Demo fallback mutation with stock check
-      const item = MOCK_INVENTORIES.find(
-        (i) => i.store_id === Number(payload.source_store_id) && i.product_id === Number(payload.product_id)
-      );
-
-      if (!item || item.available_quantity < Number(payload.quantity)) {
-        throw new Error(
-          `Insufficient stock at selected branch. Available: ${item ? item.available_quantity : 0}, requested: ${payload.quantity}. Negative stock is prohibited.`
-        );
-      }
-
-      item.quantity -= Number(payload.quantity);
-      item.available_quantity -= Number(payload.quantity);
-      item.stock_valuation = item.quantity * item.cost_price;
-      item.last_movement_at = new Date().toISOString();
-
-      const year = new Date().getFullYear();
-      const mockRef = `ISS-${year}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-
-      return {
-        success: true,
-        message: `Stock successfully issued. Reference: ${mockRef}`,
-        data: {
-          movement_number: mockRef,
-          type: 'ISSUE',
-          quantity: payload.quantity,
-        },
-      };
-    }
+    const response = await apiClient.post('/admin/stock-movements/issue', payload);
+    return response.data;
   },
 
   /**
    * Inter-Store Stock Transfer: Atomic stock movement between branches
    */
   async transferStock(payload) {
-    try {
-      const response = await apiClient.post('/admin/stock-movements/transfer', payload);
-      return response.data;
-    } catch (err) {
-      if (err.response?.data?.errors || err.response?.data?.message) {
-        throw err;
-      }
-
-      if (Number(payload.source_store_id) === Number(payload.destination_store_id)) {
-        throw new Error('Source store and destination store must be different branches.');
-      }
-
-      const sourceItem = MOCK_INVENTORIES.find(
-        (i) => i.store_id === Number(payload.source_store_id) && i.product_id === Number(payload.product_id)
-      );
-
-      if (!sourceItem || sourceItem.available_quantity < Number(payload.quantity)) {
-        throw new Error(
-          `Cannot transfer: Insufficient available stock at source branch (Available: ${sourceItem ? sourceItem.available_quantity : 0}).`
-        );
-      }
-
-      // Deduct from source
-      sourceItem.quantity -= Number(payload.quantity);
-      sourceItem.available_quantity -= Number(payload.quantity);
-      sourceItem.stock_valuation = sourceItem.quantity * sourceItem.cost_price;
-      sourceItem.last_movement_at = new Date().toISOString();
-
-      // Credit to destination
-      const destItem = MOCK_INVENTORIES.find(
-        (i) => i.store_id === Number(payload.destination_store_id) && i.product_id === Number(payload.product_id)
-      );
-      if (destItem) {
-        destItem.quantity += Number(payload.quantity);
-        destItem.available_quantity += Number(payload.quantity);
-        destItem.stock_valuation = destItem.quantity * destItem.cost_price;
-        destItem.last_movement_at = new Date().toISOString();
-      }
-
-      const year = new Date().getFullYear();
-      const mockRef = payload.transfer_reference || `TRF-${year}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-
-      return {
-        success: true,
-        message: `Inter-store transfer executed atomically. Reference: ${mockRef}`,
-        data: {
-          movement_number: mockRef,
-          type: 'TRANSFER_OUT',
-          quantity: payload.quantity,
-        },
-      };
-    }
+    const response = await apiClient.post('/admin/stock-movements/transfer', payload);
+    return response.data;
   },
 
   /**
    * Stock Adjustment: Physical cycle count reconciliation with mandatory reason
    */
   async adjustStock(payload) {
-    try {
-      const response = await apiClient.post('/admin/stock-movements/adjust', payload);
-      return response.data;
-    } catch (err) {
-      if (err.response?.data?.errors || err.response?.data?.message) {
-        throw err;
-      }
-
-      if (!payload.adjustment_reason || payload.adjustment_reason.trim().length < 5) {
-        throw new Error('A detailed adjustment reason (at least 5 characters) is mandatory for physical audit compliance.');
-      }
-
-      const item = MOCK_INVENTORIES.find(
-        (i) => i.store_id === Number(payload.store_id) && i.product_id === Number(payload.product_id)
-      );
-
-      if (item) {
-        const prev = item.quantity;
-        item.quantity = Number(payload.new_quantity);
-        item.available_quantity = Number(payload.new_quantity) - item.reserved_quantity;
-        item.stock_valuation = item.quantity * item.cost_price;
-        item.last_movement_at = new Date().toISOString();
-
-        const year = new Date().getFullYear();
-        const mockRef = `ADJ-${year}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-
-        return {
-          success: true,
-          message: `Stock reconciled from ${prev} to ${item.quantity}. Reference: ${mockRef}`,
-          data: {
-            movement_number: mockRef,
-            type: 'ADJUSTMENT',
-            new_quantity: item.quantity,
-          },
-        };
-      }
-
-      throw new Error('Inventory record not found.');
-    }
+    const response = await apiClient.post('/admin/stock-movements/adjust', payload);
+    return response.data;
   },
 
   /**
    * Fetch inventory reports
    */
   async getReports(type = 'current_stock', storeId = null) {
-    try {
-      const response = await apiClient.get('/admin/inventory/reports', {
-        params: { type, ...(storeId ? { store_id: storeId } : {}) },
-      });
-      if (response.data?.data) {
-        return response.data;
-      }
-    } catch {
-      // Fallback
-    }
-
-    let items = [...MOCK_INVENTORIES];
-    if (storeId) {
-      items = items.filter((i) => i.store_id === Number(storeId));
-    }
-
-    return {
-      success: true,
-      data: {
-        report_type: type,
-        generated_at: new Date().toISOString(),
-        total_items: items.length,
-        data: items,
-      },
-    };
+    const response = await apiClient.get('/admin/inventory/reports', {
+      params: { type, ...(storeId ? { store_id: storeId } : {}) },
+    });
+    return response.data;
   },
+
 };
 
 export default inventoryService;
